@@ -1,14 +1,35 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Omensite Journal</title><link rel="stylesheet" href="style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2310151f'/><path d='M6 22l7-8 5 5 8-10' stroke='%2322d3a6' stroke-width='3' fill='none'/></svg>">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Omensite Journal</title>
+<meta name="description" content="Private, local-first trading journal for futures and stocks.">
+<script>try{var t=localStorage.getItem('om-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2384f5a5'/><path d='M7 22l6-7 5 4 7-9' stroke='%23080b09' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 </head><body>
-<header class="top"><div class="brand"><span class="logo">◆</span> Omensite <b>Journal</b></div>
-<nav id="nav">
-<button data-v="dash" class="on">Dashboard</button><button data-v="trades">Trades</button><button data-v="new">+ Log Trade</button><button data-v="cal">News Calendar</button><button data-v="plan">Daily Plan</button><button data-v="settings">Settings</button>
-</nav></header>
-<main id="app"></main>
-<div id="modal" class="modal hidden"><div class="mbox" id="mbox"></div></div>
-<div id="toast" class="toast"></div>
+<div class="om-app">
+ <aside class="om-side" id="side">
+  <div class="om-sidebar" id="sidebar">
+   <div class="om-sidebar-brand"><span class="om-sidebar-mark" aria-hidden="true">O</span><span class="om-sidebar-word">Omensite</span><span class="om-sidebar-tag">Journal</span></div>
+   <nav class="om-sidebar-list" id="nav" aria-label="Primary"></nav>
+   <div class="om-sidebar-foot"><button type="button" class="om-nav om-side-collapse" id="collapse"><span data-ic="panel-left" data-s="18"></span><span class="om-nav-label">Collapse</span></button></div>
+  </div>
+ </aside>
+ <div class="om-nav-scrim" id="scrim"></div>
+ <div class="om-mainwrap">
+  <header class="om-header">
+   <button type="button" class="om-btn om-btn-ghost om-btn-sm om-btn-icononly om-hamburger" id="menu" aria-label="Open navigation"><span data-ic="panel-left"></span></button>
+   <span class="om-header-brand"><span class="om-sidebar-mark" aria-hidden="true">O</span></span>
+   <span class="om-local" title="No server: trades, screenshots and plans are stored only in this browser (IndexedDB)"><span class="om-local-dot"></span><span>Stored locally in this browser</span></span>
+   <span class="om-header-spacer"></span>
+   <button type="button" class="om-btn om-btn-ghost om-btn-sm om-btn-icononly" id="theme" aria-label="Toggle theme"></button>
+   <button type="button" class="om-btn om-btn-primary om-btn-sm om-quickadd" id="quick"><span data-ic="plus"></span><span>Log trade</span></button>
+  </header>
+  <main id="app" class="om-page"></main>
+ </div>
+</div>
+<div id="modal" class="om-modal-layer hidden" role="dialog" aria-modal="true"><div class="om-scrim"></div><div class="om-modal" id="mbox"></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="app.js"></script>
 </body></html>
