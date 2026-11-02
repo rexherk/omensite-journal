@@ -1,8 +1,10 @@
-"""SQLite storage. Each query that reads a trader's rows takes their user id."""
+"""SQLite locally, PostgreSQL when DATABASE_URL is configured. Rows are user-scoped."""
 
 from __future__ import annotations
 
 import sqlite3
+import os
+from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -197,6 +199,12 @@ CREATE TABLE IF NOT EXISTS news_events (
 );
 CREATE INDEX IF NOT EXISTS idx_trades_user ON trades (user_id, opened_at);
 CREATE INDEX IF NOT EXISTS idx_news_when ON news_events (when_utc);
+CREATE TABLE IF NOT EXISTS media_blobs (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    filename TEXT NOT NULL,
+    content BLOB NOT NULL,
+    PRIMARY KEY (user_id, filename)
+);
 """
 
 TRADE_FIELDS = [
@@ -259,6 +267,14 @@ TRADE_FIELDS = [
 
 
 def connect() -> sqlite3.Connection:
+    url = os.environ.get("DATABASE_URL", "").strip()
+    if url:
+        if not url.startswith(("postgres://", "postgresql://")):
+            raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL.")
+        from app.postgres import PostgresConnection
+        return PostgresConnection(url)
+    if os.environ.get("OMENSITE_REQUIRE_DATABASE") == "1":
+        raise RuntimeError("Attach a managed PostgreSQL database using DATABASE_URL before starting this deployment.")
     conn = sqlite3.connect(db_path(), timeout=5)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -279,7 +295,20 @@ def session():
 
 
 def _column_names(conn: sqlite3.Connection, table: str) -> set[str]:
+    if is_postgres(conn):
+        return {row["name"] for row in conn.execute(
+            "SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?", (table,))}
     return {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def is_postgres(conn) -> bool:
+    return not isinstance(conn, sqlite3.Connection)
+
+
+def insert_id(conn, sql: str, args=()) -> int:
+    if is_postgres(conn):
+        return int(conn.execute(sql.strip().rstrip(";") + " RETURNING id", args).fetchone()["id"])
+    return int(conn.execute(sql, args).lastrowid)
 
 
 def ensure_user_columns(conn: sqlite3.Connection) -> None:
@@ -306,8 +335,18 @@ def ensure_user_columns(conn: sqlite3.Connection) -> None:
 
 
 def init_db(conn: sqlite3.Connection) -> None:
-    conn.executescript(SCHEMA)
-    ensure_user_columns(conn)
+    if is_postgres(conn):
+        # Serialize first-time setup across application workers.
+        conn.execute("SELECT 1 FROM pg_advisory_xact_lock(654719032)")
+        conn.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        version = "001_initial"
+        if not conn.execute("SELECT version FROM schema_migrations WHERE version = ?", (version,)).fetchone():
+            schema = Path(__file__).resolve().parent.parent / "migrations" / "001_initial_postgres.sql"
+            conn.executescript(schema.read_text(encoding="utf-8"))
+            conn.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
+    else:
+        conn.executescript(SCHEMA)
+        ensure_user_columns(conn)
     count = conn.execute("SELECT COUNT(*) AS n FROM news_events").fetchone()["n"]
     if count:
         return
@@ -332,14 +371,13 @@ def many(conn, sql: str, args=()) -> list[dict]:
 
 def create_user(conn, email: str, salt: str, password_hash: str, timezone: str) -> int:
     now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    cur = conn.execute(
+    return insert_id(conn,
         """
         INSERT INTO users (email, password_hash, password_salt, timezone, news_window_minutes, created_at)
         VALUES (?, ?, ?, ?, 15, ?)
         """,
         (email, password_hash, salt, timezone, now),
     )
-    return int(cur.lastrowid)
 
 
 def user_by_email(conn, email: str) -> dict | None:
@@ -457,14 +495,13 @@ def account(conn, user_id: int, account_id: int) -> dict | None:
 
 
 def insert_account(conn, user_id, name, kind, starting, daily, trail, target) -> int:
-    cur = conn.execute(
+    return insert_id(conn,
         """
         INSERT INTO accounts (user_id, name, kind, starting_balance, daily_loss_limit, trailing_drawdown, profit_target)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (user_id, name, kind, starting, daily, trail, target),
     )
-    return int(cur.lastrowid)
 
 
 def delete_account(conn, user_id: int, account_id: int) -> None:
@@ -480,11 +517,10 @@ def checklist(conn, user_id: int) -> list[dict]:
 
 
 def add_check(conn, user_id: int, label: str, position: int) -> int:
-    cur = conn.execute(
+    return insert_id(conn,
         "INSERT INTO checklist_items (user_id, label, position, active) VALUES (?, ?, ?, 1)",
         (user_id, label, position),
     )
-    return int(cur.lastrowid)
 
 
 def disable_check(conn, user_id: int, item_id: int) -> None:
@@ -497,11 +533,10 @@ def disable_check(conn, user_id: int, item_id: int) -> None:
 def insert_trade(conn, fields: dict) -> int:
     keys = [key for key in TRADE_FIELDS if key in fields]
     marks = ", ".join("?" for _ in keys)
-    cur = conn.execute(
+    return insert_id(conn,
         f"INSERT INTO trades ({', '.join(keys)}) VALUES ({marks})",
         [fields[key] for key in keys],
     )
-    return int(cur.lastrowid)
 
 
 def update_trade(conn, user_id: int, trade_id: int, fields: dict) -> bool:
@@ -640,14 +675,13 @@ def upsert_shot(conn, user_id: int, trade_id: int, slot: str, filename: str, cre
             (filename, created_at, existing["id"]),
         )
         return int(existing["id"])
-    cur = conn.execute(
+    return insert_id(conn,
         """
         INSERT INTO screenshots (user_id, trade_id, slot, filename, markup_json, created_at)
         VALUES (?, ?, ?, ?, '[]', ?)
         """,
         (user_id, trade_id, slot, filename, created_at),
     )
-    return int(cur.lastrowid)
 
 
 def set_markup(conn, user_id: int, shot_id: int, markup_json: str) -> bool:
@@ -695,14 +729,13 @@ def playbook(conn, user_id: int, playbook_id: int) -> dict | None:
 
 
 def insert_playbook(conn, user_id: int, name: str, setup: str, rules: str, notes: str, created_at: str) -> int:
-    cur = conn.execute(
+    return insert_id(conn,
         """
         INSERT INTO playbooks (user_id, name, setup, rules, example_notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
         """,
         (user_id, name, setup, rules, notes, created_at),
     )
-    return int(cur.lastrowid)
 
 
 def update_playbook(conn, user_id: int, playbook_id: int, name: str, setup: str, rules: str, notes: str) -> bool:
@@ -730,11 +763,10 @@ def playbook_image(conn, user_id: int, image_id: int) -> dict | None:
 
 
 def add_playbook_image(conn, user_id: int, playbook_id: int, filename: str, created_at: str) -> int:
-    cur = conn.execute(
+    return insert_id(conn,
         "INSERT INTO playbook_images (user_id, playbook_id, filename, created_at) VALUES (?, ?, ?, ?)",
         (user_id, playbook_id, filename, created_at),
     )
-    return int(cur.lastrowid)
 
 
 def delete_playbook_image(conn, user_id: int, image_id: int) -> dict | None:
@@ -750,7 +782,7 @@ def watch_rows(conn, user_id: int) -> list[dict]:
 
 
 def add_watch(conn, user_id: int, symbol: str) -> None:
-    conn.execute("INSERT OR IGNORE INTO watchlist (user_id, symbol) VALUES (?, ?)", (user_id, symbol))
+    conn.execute("INSERT INTO watchlist (user_id, symbol) VALUES (?, ?) ON CONFLICT(user_id, symbol) DO NOTHING", (user_id, symbol))
 
 
 def delete_watch(conn, user_id: int, watch_id: int) -> None:
@@ -779,3 +811,16 @@ def news_events(conn) -> list[dict]:
 def sample_count(conn, user_id: int, note: str) -> int:
     row = one(conn, "SELECT COUNT(*) AS n FROM trades WHERE user_id = ? AND notes = ?", (user_id, note))
     return int(row["n"] if row else 0)
+
+
+def store_media(conn, user_id: int, filename: str, content: bytes) -> None:
+    conn.execute("INSERT INTO media_blobs (user_id, filename, content) VALUES (?, ?, ?)", (user_id, filename, content))
+
+
+def media_content(conn, user_id: int, filename: str) -> bytes | None:
+    row = one(conn, "SELECT content FROM media_blobs WHERE user_id = ? AND filename = ?", (user_id, filename))
+    return bytes(row["content"]) if row else None
+
+
+def delete_media(conn, user_id: int, filename: str) -> None:
+    conn.execute("DELETE FROM media_blobs WHERE user_id = ? AND filename = ?", (user_id, filename))

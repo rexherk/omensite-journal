@@ -36,7 +36,7 @@ from app.imports import ImportError as CsvImportError
 from app.imports import parse_csv
 from app.instruments import future_root, parse_symbol, spec_for
 from app.news_data import CAVEAT
-from app.paths import ensure_upload_dir, import_dir, upload_path
+from app.paths import import_dir, upload_path
 from app.present import equity_svg
 from app.services_error import JournalError
 from app import db
@@ -669,7 +669,7 @@ def remove_trade(conn, user_id: int, trade_id: int) -> None:
     if not db.delete_trade(conn, user_id, trade_id):
         raise JournalError("Trade not found.")
     for name in names:
-        upload_path(user_id, name).unlink(missing_ok=True)
+        delete_image(conn, user_id, name)
 
 
 def _math_rows(trades: list[dict], mistakes: dict[int, list[str]]) -> list[dict]:
@@ -1179,10 +1179,24 @@ def sniff_image(data: bytes) -> str:
     raise JournalError("Use a PNG, JPEG, GIF, or WebP image.")
 
 
-def store_image(user_id: int, data: bytes) -> str:
+def store_image(conn, user_id: int, data: bytes) -> str:
     name = f"{uuid4().hex}{sniff_image(data)}"
-    (ensure_upload_dir(user_id) / name).write_bytes(data)
+    db.store_media(conn, user_id, name, data)
     return name
+
+
+def read_image(conn, user_id: int, filename: str) -> bytes | None:
+    path = upload_path(user_id, filename)
+    content = db.media_content(conn, user_id, filename)
+    if content is not None:
+        return content
+    # Existing local journals can still read their previously uploaded files.
+    return path.read_bytes() if path.is_file() else None
+
+
+def delete_image(conn, user_id: int, filename: str) -> None:
+    db.delete_media(conn, user_id, filename)
+    upload_path(user_id, filename).unlink(missing_ok=True)
 
 
 def clean_markup(shapes) -> str:
@@ -1217,10 +1231,10 @@ def save_trade_shot(conn, user: dict, trade_id: int, slot: str, data: bytes) -> 
     if db.trade(conn, user["id"], trade_id) is None:
         raise JournalError("Trade not found.")
     existing = next((shot for shot in db.shots(conn, trade_id) if shot["slot"] == slot), None)
-    filename = store_image(user["id"], data)
+    filename = store_image(conn, user["id"], data)
     shot_id = db.upsert_shot(conn, user["id"], trade_id, slot, filename, utc_iso(datetime.now(UTC)))
     if existing and existing["filename"] != filename:
-        upload_path(user["id"], existing["filename"]).unlink(missing_ok=True)
+        delete_image(conn, user["id"], existing["filename"])
     return shot_id
 
 
@@ -1233,7 +1247,7 @@ def remove_shot(conn, user: dict, shot_id: int) -> None:
     row = db.delete_shot(conn, user["id"], shot_id)
     if row is None:
         raise JournalError("Chart not found.")
-    upload_path(user["id"], row["filename"]).unlink(missing_ok=True)
+    delete_image(conn, user["id"], row["filename"])
 
 
 def _preview_path(user_id: int, token: str):
@@ -1385,14 +1399,14 @@ def export_backup(conn, user: dict) -> dict:
         ]
         shots = []
         for shot in db.shots(conn, trade["id"]):
-            path = upload_path(user_id, shot["filename"])
-            if not path.is_file():
+            content = read_image(conn, user_id, shot["filename"])
+            if content is None:
                 continue
             shots.append(
                 {
                     "slot": shot["slot"],
                     "markup_json": shot["markup_json"],
-                    "data_b64": base64.b64encode(path.read_bytes()).decode("ascii"),
+                    "data_b64": base64.b64encode(content).decode("ascii"),
                 }
             )
         item["screenshots"] = shots
@@ -1401,9 +1415,9 @@ def export_backup(conn, user: dict) -> dict:
     for book in db.playbooks(conn, user_id):
         images = []
         for image in db.playbook_images(conn, book["id"]):
-            path = upload_path(user_id, image["filename"])
-            if path.is_file():
-                images.append({"data_b64": base64.b64encode(path.read_bytes()).decode("ascii")})
+            content = read_image(conn, user_id, image["filename"])
+            if content is not None:
+                images.append({"data_b64": base64.b64encode(content).decode("ascii")})
         books.append(
             {
                 "name": book["name"],
@@ -1582,10 +1596,10 @@ def restore_backup(conn, user: dict, payload: dict) -> int:
             )
             for shot in trade.get("screenshots") or []:
                 data = base64.b64decode(shot.get("data_b64") or "", validate=True)
-                filename = store_image(user_id, data)
+                filename = store_image(conn, user_id, data)
                 created.append(filename)
                 if shot.get("slot") not in {"htf", "entry", "after_exit"}:
-                    upload_path(user_id, filename).unlink(missing_ok=True)
+                    delete_image(conn, user_id, filename)
                     created.pop()
                     continue
                 shot_id = db.upsert_shot(conn, user_id, trade_id, shot.get("slot"), filename, utc_iso(datetime.now(UTC)))
@@ -1622,7 +1636,7 @@ def restore_backup(conn, user: dict, payload: dict) -> int:
             )
             for image in book.get("images") or []:
                 data = base64.b64decode(image.get("data_b64") or "", validate=True)
-                filename = store_image(user_id, data)
+                filename = store_image(conn, user_id, data)
                 created.append(filename)
                 db.add_playbook_image(conn, user_id, book_id, filename, utc_iso(datetime.now(UTC)))
         for symbol in payload.get("watchlist") or []:
@@ -1640,7 +1654,7 @@ def restore_backup(conn, user: dict, payload: dict) -> int:
             db.add_earning(conn, user_id, symbol, when, str(row.get("note") or "")[:400])
     except Exception:
         for name in created:
-            upload_path(user_id, name).unlink(missing_ok=True)
+            delete_image(conn, user_id, name)
         raise
     return restored
 
@@ -1708,13 +1722,13 @@ def remove_playbook(conn, user: dict, playbook_id: int) -> None:
     names = [image["filename"] for image in db.playbook_images(conn, playbook_id)]
     db.delete_playbook(conn, user["id"], playbook_id)
     for name in names:
-        upload_path(user["id"], name).unlink(missing_ok=True)
+        delete_image(conn, user["id"], name)
 
 
 def add_playbook_shot(conn, user: dict, playbook_id: int, data: bytes) -> None:
     if db.playbook(conn, user["id"], playbook_id) is None:
         raise JournalError("Setup not found.")
-    filename = store_image(user["id"], data)
+    filename = store_image(conn, user["id"], data)
     db.add_playbook_image(conn, user["id"], playbook_id, filename, utc_iso(datetime.now(UTC)))
 
 
@@ -1722,7 +1736,7 @@ def remove_playbook_shot(conn, user: dict, image_id: int) -> None:
     row = db.delete_playbook_image(conn, user["id"], image_id)
     if row is None:
         raise JournalError("Image not found.")
-    upload_path(user["id"], row["filename"]).unlink(missing_ok=True)
+    delete_image(conn, user["id"], row["filename"])
 
 
 def add_symbol_watch(conn, user: dict, raw: str) -> None:

@@ -39,7 +39,6 @@ from app.firms import FIRMS
 from app.public_pages import PUBLIC_PAGES, PRODUCT_PAGES, SOLUTION_PAGES, RESOURCE_PAGES
 from app.sample_data import sample_overview
 from app.instruments import FUTURES
-from app.paths import upload_path
 from app.present import factor, hold, money, pct, plain, rmult
 from app.services import (
     add_checklist_item,
@@ -72,6 +71,7 @@ from app.services import (
     remove_playbook_shot,
     remove_shot,
     remove_trade,
+    read_image,
     restore_backup,
     review_context,
     save_plan,
@@ -159,7 +159,6 @@ async def attach_user(request: Request, call_next):
     request.state.demo_mode = False
     if not request.url.path.startswith("/static"):
         with db.session() as conn:
-            db.init_db(conn)
             demo_token = request.cookies.get(DEMO_COOKIE)
             token = request.cookies.get(COOKIE)
             row = db.session_user(conn, demo_token) if demo_token else None
@@ -657,16 +656,13 @@ def media(request: Request, shot_id: int):
     user = current(request)
     with db.session() as conn:
         row = db.shot(conn, user["id"], shot_id)
+        content = read_image(conn, user["id"], row["filename"]) if row else None
     if row is None:
         raise HTTPException(status_code=404, detail="Chart not found.")
-    try:
-        path = upload_path(user["id"], row["filename"])
-    except FormError as exc:
-        raise HTTPException(status_code=404, detail="Chart not found.") from exc
-    if not path.is_file():
+    if content is None:
         raise HTTPException(status_code=404, detail="Chart not found.")
     types = {".png": "image/png", ".jpg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
-    return Response(content=path.read_bytes(), media_type=types.get(path.suffix, "application/octet-stream"))
+    return Response(content=content, media_type=types.get(Path(row["filename"]).suffix, "application/octet-stream"))
 
 
 @app.get("/import")
@@ -915,16 +911,13 @@ def playbook_media(request: Request, image_id: int):
     user = current(request)
     with db.session() as conn:
         row = db.playbook_image(conn, user["id"], image_id)
+        content = read_image(conn, user["id"], row["filename"]) if row else None
     if row is None:
         raise HTTPException(status_code=404, detail="Image not found.")
-    try:
-        path = upload_path(user["id"], row["filename"])
-    except FormError as exc:
-        raise HTTPException(status_code=404, detail="Image not found.") from exc
-    if not path.is_file():
+    if content is None:
         raise HTTPException(status_code=404, detail="Image not found.")
     types = {".png": "image/png", ".jpg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
-    return Response(content=path.read_bytes(), media_type=types.get(path.suffix, "application/octet-stream"))
+    return Response(content=content, media_type=types.get(Path(row["filename"]).suffix, "application/octet-stream"))
 
 
 @app.get("/settings")

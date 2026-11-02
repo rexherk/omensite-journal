@@ -235,6 +235,21 @@ class AppTests(unittest.TestCase):
         self.client.get("/demo/exit")
         self.assertIsNone(self.client.cookies.get("omensite_session"))
 
+    def test_homepage_and_demo_use_the_same_calculated_sample(self):
+        self.client.cookies.clear()
+        home = self.client.get("/home")
+        demo = self.client.get("/demo")
+        for attribute in ("data-net-pnl", "data-month-pnl"):
+            pattern = attribute + r'="([^"]+)"'
+            self.assertEqual(re.findall(pattern, home.text), re.findall(pattern, demo.text))
+        pattern = r'data-date="([^"]+)" data-pnl="([^"]+)" data-trades="([^"]+)"'
+        home_days = re.findall(pattern, home.text)
+        self.assertEqual(home_days, re.findall(pattern, demo.text))
+        self.assertGreaterEqual(len({count for _, _, count in home_days if count != "0"}), 4)
+        self.assertGreaterEqual(sum(count == "0" for _, _, count in home_days), 2)
+        net = float(re.search(r'data-net-pnl="([^"]+)"', demo.text).group(1))
+        self.assertAlmostEqual(sum(float(pnl) for _, pnl, _ in home_days), net, places=2)
+
     def test_discord_sign_in_paths(self):
         from app import db
         from app.services import login_discord, start_session

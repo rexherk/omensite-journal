@@ -29,6 +29,18 @@ The journal file stays on this machine.
 
 The server listens on this machine only. To reach it from another device, bind a wider address on purpose, for example `--host 0.0.0.0`, and treat that machine as the one holding the data.
 
+## Managed hosting
+
+The root `Dockerfile` runs the current FastAPI website on `0.0.0.0:$PORT` (8080 by default). Set the readiness path to `/health`. The container requires a managed PostgreSQL connection in `DATABASE_URL`; it refuses to use temporary SQLite storage when that connection is missing.
+
+The PostgreSQL schema is checked in at `migrations/001_initial_postgres.sql`. Startup applies unapplied migrations inside a transaction, guarded by an advisory lock. You can also run `python -m app.migrate` explicitly. The migration is additive and records its version in `schema_migrations`.
+
+Use the hosting platform's database attachment to inject `DATABASE_URL` over its private network. Native attachment requires the database and repository server to have the same owner. Shared database write access permits schema queries but does not grant native connection credentials or cross-owner server attachment.
+
+Set `OMENSITE_DISCORD_CLIENT_ID` and `OMENSITE_DISCORD_CLIENT_SECRET` in the server's encrypted environment. Register the public address followed by `/auth/discord/callback` on that Discord application, for example `https://journal.omensite.com/auth/discord/callback`.
+
+Trades, accounts, sessions, notes, and uploaded chart images are stored in the database. Temporary CSV import previews use `OMENSITE_DATA`; users can upload the CSV again if a deployment interrupts a preview. Existing local image files remain readable and are included in JSON backups. Back up an existing database before future schema changes; application image rollback does not roll back database changes.
+
 ## What is included
 
 - Trade logging for ES, NQ, MES, MNQ, YM, RTY, CL, GC, and stocks, including scale-ins and partial exits
@@ -54,7 +66,7 @@ The server listens on this machine only. To reach it from another device, bind a
 
 ## Where the data lives
 
-SQLite and chart images sit in the `data` folder next to this file. Set `OMENSITE_DATA` to put that folder somewhere else. Any device that can open this server sees the same journal. That is the sync: one server, one file.
+Without `DATABASE_URL`, the local journal uses SQLite in the `data` folder next to this file. Set `OMENSITE_DATA` to put that folder somewhere else. New uploaded images are stored inside the selected database; existing local chart files remain supported. Each signed-in trader sees only their own records.
 
 ## Tests
 
