@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Set up the desk · Omensite Journal{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <p class="kicker">First run</p>
+    <h1>Three steps, then the dashboard.</h1>
+  </div>
+</div>
+<form method="post" action="/onboarding" data-steps>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <ol class="step-nav">
+    <li><button type="button" data-step="0" class="on">1 Markets</button></li>
+    <li><button type="button" data-step="1">2 Accounts</button></li>
+    <li><button type="button" data-step="2">3 Setups</button></li>
+  </ol>
+  <section class="step on panel" data-step-panel="0">
+    <h2>Markets you trade</h2>
+    <div class="pills">
+      {% for market in ["ES", "NQ", "MES", "MNQ", "stocks"] %}
+      <label><input type="checkbox" name="markets" value="{{ market }}" {% if market != "stocks" %}checked{% endif %}>{{ market }}</label>
+      {% endfor %}
+    </div>
+    <div class="actions"><button type="button" data-next>Next</button></div>
+  </section>
+  <section class="step panel" data-step-panel="1">
+    <h2>Accounts</h2>
+    <p class="muted">Tap a firm to fill its published rule shape. Every number stays editable. Eval and Funded are tracked as prop accounts.</p>
+    {% for key, firm in firms.items() %}
+    <article class="firm">
+      <label class="firm-head"><input type="checkbox" name="firms" value="{{ key }}"><span class="firm-mark" aria-hidden="true">{{ firm.mark }}</span><span>{{ firm.label }}</span></label>
+      <p class="muted">{{ firm.note }}</p>
+      <div class="firm-grid">
+        <label>Kind
+          <select name="{{ key }}_kind">
+            <option value="eval">Eval</option>
+            <option value="funded">Funded</option>
+            <option value="personal">Personal</option>
+          </select>
+        </label>
+        <label>Daily loss<input name="{{ key }}_daily" value="{{ firm.daily if firm.daily is not none else '' }}" inputmode="decimal"></label>
+        <label>Max drawdown<input name="{{ key }}_trail" value="{{ firm.trail if firm.trail is not none else '' }}" inputmode="decimal"></label>
+        <label>Profit target<input name="{{ key }}_target" value="{{ firm.target if firm.target is not none else '' }}" inputmode="decimal"></label>
+        <label>Consistency %<input name="{{ key }}_consistency" value="{{ firm.consistency if firm.consistency is not none else '' }}" inputmode="decimal"></label>
+      </div>
+    </article>
+    {% endfor %}
+    <div class="actions">
+      <button type="button" class="ghost" data-prev>Back</button>
+      <button type="button" data-next>Next</button>
+    </div>
+  </section>
+  <section class="step panel" data-step-panel="2">
+    <h2>Favorite ICT setups</h2>
+    <p class="muted">Each pick becomes a playbook page you can edit.</p>
+    <div class="pills">
+      {% for tag in tag_choices %}
+      <label><input type="checkbox" name="setups" value="{{ tag }}" {% if tag in ["FVG", "Silver Bullet", "Order Block"] %}checked{% endif %}>{{ tag }}</label>
+      {% endfor %}
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost" data-prev>Back</button>
+      <button type="submit">Open the dashboard</button>
+    </div>
+  </section>
+</form>
+{% endblock %}

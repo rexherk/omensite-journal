@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Settings · Omensite Journal{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<section class="panel">
+  <h2>You</h2>
+  <form method="post" action="/settings/profile">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Timezone
+      <select name="timezone">
+        {% if user.timezone not in zones %}<option value="{{ user.timezone }}" selected>{{ user.timezone }}</option>{% endif %}
+        {% for name in zones %}
+        <option value="{{ name }}" {% if user.timezone == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Flag trades within this many minutes of a high-impact release
+      <input name="window" type="number" min="1" max="180" value="{{ user.news_window_minutes }}">
+    </label>
+    <button type="submit">Save</button>
+  </form>
+  <p class="muted">Signed in as {{ user.email }}. The journal file on this server is the copy every device sees, as long as those devices can reach this server.</p>
+</section>
+
+<section class="panel">
+  <h2>Accounts</h2>
+  {% for account in accounts %}
+  <form method="post" action="/settings/accounts/{{ account.id }}/delete">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <strong>{{ account.name }}</strong>
+    <span class="muted">{{ account.kind }} · start {{ account.starting_balance | money }}</span>
+    {% if account.kind == "prop" %}
+    <span class="muted">daily {{ account.daily_loss_limit | money }} · trail {{ account.trailing_drawdown | money }} · target {{ account.profit_target | money }}</span>
+    {% endif %}
+    <button class="ghost" type="submit">Delete</button>
+  </form>
+  {% endfor %}
+  <form method="post" action="/settings/accounts">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Name<input name="name" required></label>
+    <label>Type
+      <select name="kind">
+        {% for kind in account_kinds %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Starting balance<input name="starting_balance" value="0" inputmode="decimal"></label>
+    <label>Daily loss limit<input name="daily_loss_limit" inputmode="decimal"></label>
+    <label>Trailing drawdown<input name="trailing_drawdown" inputmode="decimal"></label>
+    <label>Profit target<input name="profit_target" inputmode="decimal"></label>
+    <button type="submit">Add account</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Checklist</h2>
+  <p class="muted">A full checklist is A+. 80% is A, 60% is B, and below that is C. Turning an item off keeps it on older trades.</p>
+  {% for item in checks %}
+  <form method="post" action="/settings/checks/{{ item.id }}/disable">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <span>{{ item.label }}</span>
+    {% if item.active %}<button class="ghost" type="submit">Turn off</button>{% else %}<span class="muted">Off</span>{% endif %}
+  </form>
+  {% endfor %}
+  <form method="post" action="/settings/checks">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>New item<input name="label" required></label>
+    <button type="submit">Add item</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Sample journal</h2>
+  <p>Adds example fills so the dashboard has something to compare. Your own trades stay. Running it again does nothing if the sample is already there.</p>
+  <form method="post" action="/settings/sample">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit">Load sample journal</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Export and backup</h2>
+  <p><a href="/export.csv">Download CSV</a> · <a href="/export.json">Download full backup</a> · <a href="/report">Print or save as PDF</a></p>
+  <form method="post" action="/settings/restore" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Restore a backup<input type="file" name="backup" accept="application/json,.json" required></label>
+    <button type="submit">Add backup to this journal</button>
+  </form>
+  <p class="muted">Restore adds rows. It does not wipe what is already here. Matching account names are reused.</p>
+</section>
+{% endblock %}

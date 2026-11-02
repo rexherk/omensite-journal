@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Report · Omensite Journal{% endblock %}
+{% block body %}
+<div class="actions">
+  <h1>Report</h1>
+  <button type="button" data-print>Print or save as PDF</button>
+</div>
+<p class="muted">Use the browser print dialog and choose Save as PDF. Hour is {{ zone_name }}. Session and kill zone use New York time.</p>
+<section class="stats">
+  <div class="stat"><span>Net</span><strong>{{ dash.net_pnl | money }}</strong></div>
+  <div class="stat"><span>Win rate</span><strong>{{ dash.win_rate | pct }}</strong></div>
+  <div class="stat"><span>Profit factor</span><strong>{{ dash.profit_factor | factor }}</strong></div>
+  <div class="stat"><span>Expectancy</span><strong>{{ dash.expectancy | money }}</strong></div>
+  <div class="stat"><span>Average R</span><strong>{{ dash.average_r | rmult }}</strong></div>
+  <div class="stat"><span>Max drawdown</span><strong>{{ dash.max_drawdown | money }}</strong></div>
+  <div class="stat"><span>Rule-break P&amp;L</span><strong>{{ dash.rule_break_pnl | money }}</strong></div>
+  <div class="stat"><span>Left on table</span><strong>{{ dash.left_on_table | money }}</strong></div>
+</section>
+<section class="panel">
+  <h2>Notes</h2>
+  <ul>{% for line in dash.insights %}<li>{{ line }}</li>{% endfor %}</ul>
+</section>
+<section class="panel">
+  <h2>Trades</h2>
+  <table>
+    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th>R</th><th>Grade</th><th>Lesson</th></tr>
+    {% for trade in trades %}
+    <tr>
+      <td>{{ trade.when }}</td>
+      <td>{{ trade.instrument }}</td>
+      <td>{{ trade.direction }}</td>
+      <td>{{ trade.net_pnl | money }}</td>
+      <td>{{ trade.r_multiple | rmult }}</td>
+      <td>{{ trade.grade or "—" }}</td>
+      <td>{{ trade.lesson or "" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

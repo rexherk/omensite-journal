@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 280" role="img" aria-label="Schematic bullish sell-side liquidity sweep: two equal lows, a wick below them with a close back above, followed by bullish displacement through the prior swing high.">
+  <title>Sell-side liquidity sweep and bullish reclaim</title>
+  <desc>Two earlier candle wicks form equal lows. A later candle trades below both lows but closes back above their level. Subsequent bullish displacement closes above the preceding short-term swing high. This is a schematic example, not live market data or a guaranteed outcome.</desc>
+  <rect width="600" height="280" rx="6" fill="#f8faf2"/>
+  <g font-family="Inter, Segoe UI, sans-serif">
+    <text x="22" y="21" fill="#657954" font-size="10" letter-spacing="1.3">SELL-SIDE LIQUIDITY SWEEP</text>
+    <text x="578" y="21" fill="#89997a" font-size="9" text-anchor="end">Schematic example</text>
+    <g stroke="#e5ebdb" stroke-width="1">
+      <path d="M22 68H578M22 108H578M22 148H578M22 188H578M22 228H578"/>
+      <path d="M74 36V228M158 36V228M242 36V228M326 36V228M410 36V228M494 36V228" stroke-opacity=".5"/>
+    </g>
+
+    <!-- Equal lows: both earlier wick lows are exactly y=180. -->
+    <path d="M57 180H314" fill="none" stroke="#839d58" stroke-width="1.3" stroke-dasharray="4 4"/>
+    <path d="M157 88H359" fill="none" stroke="#a4b295" stroke-width="1.1" stroke-dasharray="3 4"/>
+    <path d="M57 181H314V222H57Z" fill="#c8f36b" fill-opacity=".055"/>
+
+    <!-- Down candle bodies extend from open to close; high/low wicks contain each body. -->
+    <g fill="#c98178" stroke="#c98178" stroke-width="1.4">
+      <path d="M45 100V141"/><rect x="39" y="110" width="12" height="20" rx="1"/>
+      <path d="M73 122V180"/><rect x="67" y="129" width="12" height="28" rx="1"/>
+      <path d="M185 94V132"/><rect x="179" y="98" width="12" height="25" rx="1"/>
+      <path d="M213 115V180"/><rect x="207" y="123" width="12" height="30" rx="1"/>
+      <path d="M269 138V173"/><rect x="263" y="145" width="12" height="16" rx="1"/>
+      <path d="M409 50V83"/><rect x="403" y="57" width="12" height="16" rx="1"/>
+      <path d="M493 31V62"/><rect x="487" y="38" width="12" height="12" rx="1"/>
+    </g>
+    <g fill="#5f936b" stroke="#5f936b" stroke-width="1.4">
+      <path d="M101 134V167"/><rect x="95" y="140" width="12" height="17" rx="1"/>
+      <path d="M129 106V147"/><rect x="123" y="115" width="12" height="26" rx="1"/>
+      <path d="M157 88V123"/><rect x="151" y="98" width="12" height="17" rx="1"/>
+      <path d="M241 139V165"/><rect x="235" y="145" width="12" height="8" rx="1"/>
+      <!-- The sweep candle opens and closes above y=180, with a low at y=216. -->
+      <path d="M297 133V216" stroke-width="1.8"/><rect x="291" y="143" width="12" height="18" rx="1"/>
+      <path d="M325 110V149"/><rect x="319" y="116" width="12" height="27" rx="1"/>
+      <!-- Bullish displacement closes at y=70, above the previous high at y=88. -->
+      <path d="M353 63V121"/><rect x="347" y="70" width="12" height="46" rx="1"/>
+      <path d="M381 49V79"/><rect x="375" y="57" width="12" height="13" rx="1"/>
+      <path d="M437 42V78"/><rect x="431" y="49" width="12" height="24" rx="1"/>
+      <path d="M465 29V55"/><rect x="459" y="38" width="12" height="11" rx="1"/>
+      <path d="M521 24V57"/><rect x="515" y="34" width="12" height="16" rx="1"/>
+    </g>
+
+    <!-- Annotations distinguish the liquidity level, reclaim, and subsequent confirmation. -->
+    <g fill="none" stroke="#8eaa61" stroke-width="1.1">
+      <circle cx="73" cy="180" r="4" fill="#f8faf2"/>
+      <circle cx="213" cy="180" r="4" fill="#f8faf2"/>
+      <path d="M118 193V181"/>
+      <path d="M297 221V239"/>
+      <path d="M373 119 359 84"/>
+    </g>
+    <path d="m355 88 4-7 2 8Z" fill="#8eaa61"/>
+    <circle cx="297" cy="216" r="4" fill="#c8f36b" stroke="#729746" stroke-width="1.2"/>
+    <text x="172" y="79" fill="#8b9a7d" font-size="10">Prior swing high</text>
+    <text x="32" y="207" fill="#657f44" font-size="11">Equal lows / sell-side liquidity</text>
+    <text x="297" y="255" text-anchor="middle" fill="#496731" font-size="12" font-weight="600">Sweep + reclaim</text>
+    <text x="383" y="135" fill="#496731" font-size="12" font-weight="600">Displacement</text>
+    <text x="383" y="151" fill="#869876" font-size="10">Close above prior swing high</text>
+    <text x="22" y="270" fill="#98a68b" font-size="8.5">Time →</text>
+  </g>
+</svg>

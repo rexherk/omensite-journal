@@ -1,0 +1,3 @@
+{% extends "marketing_base.html" %}
+{% block title %}{{ message }} · Omensite Journal{% endblock %}
+{% block content %}<section class="error-page section-width"><p class="eyebrow"><i></i> OMENSITE JOURNAL</p><h1>{{ message }}</h1><p>{{ explanation }}</p><div class="public-actions"><a href="/home" class="gradient-button">Back to website</a><a href="{{ '/' if demo_mode else '/demo' }}" class="outline-button">{{ 'Back to demo' if demo_mode else 'Try the demo' }}</a><a href="/signup" class="text-link">Create your account</a></div></section>{% endblock %}

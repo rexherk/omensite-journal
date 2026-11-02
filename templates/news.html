@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}News · Omensite Journal{% endblock %}
+{% block body %}
+<h1>News</h1>
+<p class="muted">Week of {{ week_label }}, shown in {{ user.timezone }}. Trades opened within {{ window }} minutes of a high-impact release are marked. {{ flagged }} of your trades are inside that window.</p>
+<p>{{ caveat }}</p>
+
+<section class="split">
+  <div>
+    {% for day in days %}
+    <article class="panel">
+      <h2>{{ day.label }}</h2>
+      {% if day.events %}
+        {% for event in day.events %}
+        <p>
+          <span class="tag {{ event.impact }}">{{ event.impact }}</span>
+          <strong>{{ event.title }}</strong> {{ event.time }}
+          {% if event.actual %} · actual {{ event.actual }}{% endif %}
+          {% if event.forecast %} · forecast {{ event.forecast }}{% endif %}
+          {% if event.previous %} · previous {{ event.previous }}{% endif %}
+          {% if event.note %}<br><span class="muted">{{ event.note }}</span>{% endif %}
+        </p>
+        {% endfor %}
+      {% else %}
+      <p class="muted">No built-in release on this day.</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  <div>
+    <article class="panel">
+      <h2>Recent high-impact</h2>
+      {% for event in recent %}
+      <p><span class="tag high">high</span> {{ event.title }} <span class="muted">{{ event.note }}</span></p>
+      {% else %}<p class="muted">None in the two weeks before this week.</p>{% endfor %}
+      <h2>Coming up</h2>
+      {% for event in later %}
+      <p><span class="tag high">high</span> {{ event.title }} {% if event.note %}<span class="muted">{{ event.note }}</span>{% endif %}</p>
+      {% else %}<p class="muted">No later high-impact date in the snapshot.</p>{% endfor %}
+    </article>
+    <article class="panel">
+      <h2>NYSE holidays, 2026</h2>
+      <ul>{% for event in holidays %}<li>{{ event.ny_date }} — {{ event.title }}</li>{% endfor %}</ul>
+      <h3>Early closes</h3>
+      <ul>{% for event in early %}<li>{{ event.ny_date }} — {{ event.title }}</li>{% endfor %}</ul>
+    </article>
+    <article class="panel">
+      <h2>Watchlist and earnings</h2>
+      <p class="muted">Earnings are the dates you enter. This journal does not pull a live earnings feed.</p>
+      {% for row in watchlist %}
+      <form method="post" action="/news/watchlist/{{ row.id }}/delete">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <span>{{ row.symbol }}</span>
+        <button class="ghost" type="submit">Remove</button>
+      </form>
+      {% else %}<p class="muted">No symbols yet.</p>{% endfor %}
+      <form method="post" action="/news/watchlist">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label>Symbol<input name="symbol" required></label>
+        <button type="submit">Add to watchlist</button>
+      </form>
+      <h3>Earnings</h3>
+      {% for row in earnings %}
+      <form method="post" action="/news/earnings/{{ row.id }}/delete">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <span>{{ row.symbol }} · {{ row.when }} {% if row.note %}· {{ row.note }}{% endif %}</span>
+        <button class="ghost" type="submit">Remove</button>
+      </form>
+      {% endfor %}
+      <form method="post" action="/news/earnings">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label>Symbol<input name="symbol" required></label>
+        <label>When<input type="datetime-local" name="when" required></label>
+        <label>Note<input name="note"></label>
+        <button type="submit">Add earnings date</button>
+      </form>
+    </article>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Built-in snapshot</h2>
+  <p class="muted">Not a live feed. Times below are in {{ user.timezone }}.</p>
+  <div class="scroll">
+    <table>
+      <tr><th>When</th><th>Impact</th><th>Release</th><th>Actual</th><th>Forecast</th><th>Previous</th><th>Note</th></tr>
+      {% for event in snapshot %}
+      <tr>
+        <td>{{ event.when }}</td>
+        <td><span class="tag {{ event.impact }}">{{ event.impact }}</span></td>
+        <td>{{ event.title }}</td>
+        <td>{{ event.actual or "—" }}</td>
+        <td>{{ event.forecast or "—" }}</td>
+        <td>{{ event.previous or "—" }}</td>
+        <td>{{ event.note }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+{% endblock %}

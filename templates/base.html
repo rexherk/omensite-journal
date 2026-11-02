@@ -1,0 +1,107 @@
+{% from "partials/brand.html" import logo %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="A private trading journal for logging fills, reviewing performance, tracking emotions, and spotting patterns.">
+  <meta name="csrf" content="{{ csrf }}">
+  <title>{% block title %}Omensite Journal{% endblock %}</title>
+  <link rel="icon" href="/static/brand-mark.svg" type="image/svg+xml">
+  <script>
+    try {
+      if (localStorage.getItem("omensite_sidebar") === "compact") document.documentElement.classList.add("compact");
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="/static/css/app.css?v=20">
+  <link rel="stylesheet" href="/static/css/brand.css?v=white-1">
+  <link rel="stylesheet" href="/static/css/journal-brand.css?v=white-1">
+  <link rel="stylesheet" href="/static/css/overview.css?v=1">
+  {% block extra_head %}{% endblock %}
+</head>
+<body data-demo="{{ 'true' if demo_mode else 'false' }}" class="{% if user %}shell{% endif %} {% if demo_mode %}demo-mode{% endif %} {% block body_class %}{% endblock %}">
+  {% if user %}
+  <aside class="sidebar">
+    {{ logo("/", "brand") }}
+    <nav class="side-nav" aria-label="Journal">
+      <div class="group">
+        <span>Journal</span>
+        <a href="/" class="{% if path == '/' %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Dashboard</span></a>
+        <a href="/trades" class="{% if path.startswith('/trades') and not path.startswith('/trades/new') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Trades</span></a>
+        <a href="/trades/new" class="{% if path.startswith('/trades/new') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Log</span></a>
+        <a href="/import" class="{% if path.startswith('/import') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M8 10l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Import</span></a>
+      </div>
+      <div class="group">
+        <span>Analytics</span>
+        <a href="/reviews" class="{% if path.startswith('/reviews') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3 3 7-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reviews</span></a>
+        <a href="/report" class="{% if path.startswith('/report') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Report</span></a>
+      </div>
+      <div class="group">
+        <span>Playbook</span>
+        <a href="/playbook" class="{% if path.startswith('/playbook') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zM6 4a2 2 0 0 0-2 2v14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Setups</span></a>
+        <a href="/plan" class="{% if path.startswith('/plan') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3v4M16 3v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Plan</span></a>
+      </div>
+      <div class="group">
+        <span>Calendar</span>
+        <a href="/news" class="{% if path.startswith('/news') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7M10 19a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>News</span></a>
+        <a href="/settings" class="{% if path.startswith('/settings') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Settings</span></a>
+      </div>
+    </nav>
+    <div class="side-foot">
+      <span class="who">{{ 'Sample trader' if demo_mode else (user.display_name or user.email) }}</span>
+      {% if demo_mode %}<a class="demo-footer-link" href="/demo/exit">Exit demo</a>{% else %}
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="ghost" type="submit">Sign out</button>
+      </form>
+      {% endif %}
+    </div>
+  </aside>
+  {% endif %}
+  <div class="frame">
+  <header class="top">
+    {% if not user %}
+    {{ logo("/", "brand") }}
+    {% else %}
+    <div class="mobile-journal-brand">{{ logo('/') }}</div>
+    <button class="icon-btn" type="button" id="sidebar-toggle" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <button class="palette-trigger" type="button" id="palette-open"><span class="palette-label">Jump to a page</span><span class="mobile-palette-label">Pages</span><kbd>Ctrl K</kbd></button>
+    {% endif %}
+    <a class="website-link" href="{{ '/demo/exit' if demo_mode else '/home' }}">Omensite website ↗</a>
+  </header>
+  {% if demo_mode %}<section class="demo-banner" aria-label="Demo workspace"><div><strong>Demo workspace · Sample data</strong><p>Explore the journal before making it yours. This sample workspace is read-only.</p></div><div class="demo-banner-actions"><a href="/demo/exit">Exit demo</a><a class="demo-signup" href="/signup">Create your journal →</a></div></section>{% endif %}
+  <main>
+    {% if notice %}<p class="notice" data-toast>{{ notice }}</p>{% endif %}
+    {% if error %}<p class="error" data-toast>{{ error }}</p>{% endif %}
+    {% if next_news and next_news.minutes <= 30 %}
+    <p class="notice" data-toast>{{ next_news.title }} in {{ next_news.minutes }} min</p>
+    {% endif %}
+    {% block body %}{% endblock %}
+    <p class="footer-note">Omensite Journal keeps this record on this server. The story stays with you.</p>
+  </main>
+  </div>
+  {% if user %}
+  <div class="palette" id="palette" hidden>
+    <div class="palette-card" role="dialog" aria-modal="true" aria-label="Jump to a page">
+      <input id="palette-q" type="text" placeholder="Jump to a page" autocomplete="off">
+      <ul id="palette-list"></ul>
+    </div>
+  </div>
+  <a class="fab" href="{{ '/signup' if demo_mode else '/trades/new' }}">{{ 'Create your journal →' if demo_mode else '+ Log trade' }}</a>
+  <nav class="tabbar" aria-label="Mobile">
+    <a href="/" class="{% if path == '/' %}on{% endif %}">Dashboard</a>
+    <a href="/trades/new" class="{% if path.startswith('/trades/new') %}on{% endif %}">Log</a>
+    <a href="/news" class="{% if path.startswith('/news') %}on{% endif %}">Calendar</a>
+    <a href="/reviews" class="{% if path.startswith('/reviews') %}on{% endif %}">Stats</a>
+  </nav>
+  {% endif %}
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/static/js/trade.js"></script>
+  <script src="/static/js/site.js?v=white-1"></script>
+  <script src="/static/js/overview.js?v=1"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

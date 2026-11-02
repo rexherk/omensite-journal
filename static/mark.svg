@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Omensite">
+  <rect width="64" height="64" rx="16" fill="#10141a"/>
+  <rect x="1.25" y="1.25" width="61.5" height="61.5" rx="15" fill="none" stroke="#C6F04A" stroke-opacity="0.45"/>
+  <circle cx="32" cy="33" r="21" fill="none" stroke="#C6F04A" stroke-width="1.25"/>
+  <path fill="#C6F04A" d="M34 16c-8.8 2.5-15 9.6-15 17s6.2 14.5 15 17c-7.6-2.7-12.8-9.1-12.8-17S26.4 18.7 34 16z"/>
+  <line x1="43" y1="22" x2="43" y2="46" stroke="#C6F04A" stroke-width="1.4" stroke-linecap="round"/>
+  <rect x="39.4" y="28" width="7.2" height="12" rx="1.4" fill="#C6F04A"/>
+</svg>

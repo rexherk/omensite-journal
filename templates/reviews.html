@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Reviews · Omensite Journal{% endblock %}
+{% block body %}
+<h1>Reviews</h1>
+<form class="filters panel" method="get" action="/reviews">
+  <label>Week of<input type="date" name="week" value="{{ week_start }}"></label>
+  <label>Month<input type="month" name="month" value="{{ month_value }}"></label>
+  <button type="submit">Show</button>
+</form>
+
+<section class="two">
+  {% for title, block, label in [("Week", week, week_start ~ " to " ~ week_end), ("Month", month, month_label)] %}
+  <article class="panel">
+    <h2>{{ title }}</h2>
+    <p class="muted">{{ label }}</p>
+    <p>{{ block.count }} closed · {{ block.net_pnl | money }} · Plan adherence {{ block.adherence | pct }}</p>
+    <h3>Best</h3>
+    {% for trade in block.best %}
+    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> {{ trade.r_multiple | rmult }} · {{ trade.net_pnl | money }}<br><span class="muted">{{ trade.lesson or "" }}</span></p>
+    {% else %}<p class="muted">No closed trades in this {{ title|lower }}.</p>{% endfor %}
+    <h3>Worst</h3>
+    {% for trade in block.worst %}
+    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> {{ trade.r_multiple | rmult }} · {{ trade.net_pnl | money }}</p>
+    {% endfor %}
+    <h3>Mistakes</h3>
+    {% for name, count in block.mistakes %}
+    <p>{{ name }} · {{ count }}</p>
+    {% else %}<p class="muted">No mistake tags in this stretch.</p>{% endfor %}
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

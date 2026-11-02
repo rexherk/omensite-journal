@@ -1,0 +1,15 @@
+@font-face{font-family:Inter;src:url('/static/fonts/inter-regular.ttf');font-weight:400;font-display:swap}
+@font-face{font-family:Inter;src:url('/static/fonts/inter-medium.ttf');font-weight:500;font-display:swap}
+@font-face{font-family:Inter;src:url('/static/fonts/inter-semibold.ttf');font-weight:600;font-display:swap}
+@font-face{font-family:Inter;src:url('/static/fonts/inter-bold.ttf');font-weight:700 900;font-display:swap}
+@font-face{font-family:'Inter Tight';src:url('/static/fonts/inter-tight-semibold.ttf');font-weight:500 600;font-display:swap}
+@font-face{font-family:'Inter Tight';src:url('/static/fonts/inter-tight-bold.ttf');font-weight:700 900;font-display:swap}
+:root{--oj-lime:#c8f36b;--oj-forest:#142015;--oj-paper:#ffffff;--oj-ink:#172019;--oj-font:Inter,'Segoe UI',sans-serif;--oj-heading:'Inter Tight',Inter,sans-serif;--oj-mono:Consolas,'Courier New',monospace}
+.oj-brand{display:inline-flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;color:inherit;min-width:0}
+.oj-brand:hover{text-decoration:none}
+.oj-brand>.lockup{display:block;font:700 24px/.9 var(--oj-heading);letter-spacing:-1px;color:inherit}
+.oj-brand .gradient-text{background:none;color:inherit;-webkit-text-fill-color:currentColor}
+.oj-brand small{display:block;font:8px/1 var(--oj-mono);letter-spacing:4.6px;margin-top:7px;color:#98a88a;text-transform:uppercase}
+.oj-mark{display:block;background:var(--oj-lime);border-radius:50%;width:39px;height:39px;padding:2px;flex-shrink:0}
+.oj-mark path{fill:#172510}.oj-mark path[stroke]{stroke:#172510;fill:none}.oj-mark rect[fill=white]{fill:#172510}
+@media(max-width:680px){.oj-brand>.lockup{font-size:22px}.oj-mark{width:34px;height:34px}}

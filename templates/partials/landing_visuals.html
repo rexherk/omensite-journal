@@ -1,0 +1,58 @@
+{% from "partials/dashboard_overview.html" import overview %}
+{% from "partials/brand.html" import logo %}
+{% macro icon(name, cls='') -%}
+<svg class="icon {{ cls }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if name == 'grid' %}<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+{% elif name == 'chart' %}<path d="M4 3v17h17M7 15l4-5 4 3 6-8"/>
+{% elif name == 'journal' %}<path d="M8 3h11v18H5V6h3zM8 3v5h11M9 12h6M9 16h6"/>
+{% elif name == 'play' %}<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/>
+{% elif name == 'spark' %}<path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/>
+{% elif name == 'book' %}<path d="M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1v15M5 8h4M15 8h4M5 12h4M15 12h4"/>
+{% elif name == 'case' %}<rect x="3" y="6" width="18" height="15" rx="3"/><path d="M8 6V3h8v3M3 12h18M10 12v3h4v-3"/>
+{% elif name == 'calendar' %}<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 2v6M17 2v6M3 11h18M7 15h2M13 15h3"/>
+{% elif name == 'check' %}<path d="m5 12 4 4L19 6"/>
+{% elif name == 'arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
+{% elif name == 'chevron' %}<path d="m7 10 5 5 5-5"/>
+{% elif name == 'shield' %}<path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM8 12l3 3 5-6"/>
+{% elif name == 'upload' %}<path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/>
+{% elif name == 'target' %}<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>
+{% elif name == 'heart' %}<path d="M20 4c-3-3-6 0-8 2-2-2-5-5-8-2-5 5 4 13 8 16 4-3 13-11 8-16z"/>
+{% elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/>
+{% elif name == 'chat' %}<path d="M21 11c0 5-4 8-9 8H6l-4 3V11a9 9 0 0 1 19 0zM7 9h10M7 13h6"/>
+{% elif name == 'close' %}<path d="m6 6 12 12M6 18 18 6"/>
+{% endif %}</svg>
+{%- endmacro %}
+
+
+
+{% macro equity(dark=false) -%}{{ sample.equity_svg | safe }}{%- endmacro %}
+
+
+
+{% macro dashboard() -%}
+<div class="preview-dashboard"><aside class="preview-side"><div class="preview-brand">{{ logo('/home') }}</div><div class="preview-add">＋ &nbsp; Log a trade</div>{% for title, symbol in [('Dashboard','grid'),('Trades','journal'),('Reviews','chart'),('Report','chart'),('Setups','book'),('Plan','target'),('News','calendar'),('Settings','case')] %}<div class="preview-nav {{ 'selected' if loop.first else '' }}">{{ icon(symbol) }} {{ title }}</div>{% endfor %}<div class="preview-side-bottom">Sample trader</div></aside><div class="preview-main"><div class="preview-heading"><strong>Dashboard</strong><span>All accounts</span></div><div class="preview-meta">Your trading, at a glance. <span>Sample data · Read-only</span></div>{{ overview(sample.dash, sample.calendar, sample.equity_svg, preview=true) }}</div></div>
+{%- endmacro %}
+
+{% macro trade_table() -%}
+<div class="art-window"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Trade history</strong><small>Sample journal</small></div><table class="sample-table"><thead><tr><th>Date</th><th>Symbol</th><th>Net P&amp;L</th><th>Result</th><th>Setup</th></tr></thead><tbody>{% for trade in sample.trades[:7] %}<tr><td>{{ trade.closed_at[5:10] }}</td><td><b>{{ trade.instrument }}</b></td><td class="{{ 'positive' if trade.net_pnl > 0 else 'negative' }}">{{ trade.net_pnl | money }}</td><td><span class="result-badge {{ '' if trade.net_pnl > 0 else 'loss-badge' }}">{{ 'WIN' if trade.net_pnl > 0 else 'LOSS' }}</span></td><td><span class="setup-badge">{{ trade.setup }}</span></td></tr>{% endfor %}</tbody></table></div>
+{%- endmacro %}
+
+{% macro report() -%}
+<div class="art-window report-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Performance report</strong><small>Sample journal</small></div><div class="report-summary"><div><small>Net profit</small><strong class="positive">{{ sample.dash.net_pnl | money }}</strong></div><div><small>Average R</small><strong>{{ sample.dash.average_r | rmult }}</strong></div><div><small>Win rate</small><strong>{{ sample.dash.win_rate | pct }}</strong></div></div>{{ equity() }}<div class="report-tags"><span>By setup</span><span>By session</span><span>By emotion</span><span>By instrument</span></div></div>
+{%- endmacro %}
+
+{% macro playbook() -%}
+<div class="art-window playbook-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>My playbook</strong><small>Sample setups</small></div><div class="setup-card"><span class="setup-icon">{{ icon('target') }}</span><div><h4>Liquidity sweep + displacement</h4><p>New York AM · ES / NQ · Long & short</p></div><span class="setup-grade">A+</span></div><div class="checklist"><span>Entry checklist</span>{% for item in ['Higher-timeframe bias aligned','Liquidity taken at a key level','Displacement confirms the direction','Entry at a fair value gap'] %}<div>{{ icon('check') }}{{ item }}</div>{% endfor %}</div><div class="setup-metrics"><div><strong>72.4%</strong><small>Win rate</small></div><div><strong>2.8R</strong><small>Average R</small></div><div><strong>29</strong><small>Trades logged</small></div></div></div>
+{%- endmacro %}
+
+{% macro plan() -%}
+<div class="art-window plan-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>My daily plan</strong><small>Illustrative example</small></div><div class="plan-date">{{ icon('calendar') }} Monday, October 26</div><h4>Show up with a plan.</h4><div class="plan-note"><small>TODAY'S FOCUS</small><p>Wait for the sweep. Trade the confirmation, not the anticipation.</p></div><div class="plan-grid"><div><small>Risk per trade</small><b>$250.00</b></div><div><small>Maximum trades</small><b>3 trades</b></div></div><div class="plan-check">{{ icon('check') }} Mark key levels <span>Done</span></div><div class="plan-check">{{ icon('check') }} Review yesterday's journal <span>Done</span></div><div class="plan-check empty-check">{{ icon('check') }} Write the post-session review <span>Next</span></div></div>
+{%- endmacro %}
+
+{% macro prop() -%}
+<div class="art-window prop-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Prop account overview</strong><small>Sample account</small></div><div class="prop-name"><span>{{ icon('case') }}</span><div><h4>My funded account</h4><p>$50,000 starting balance</p></div><b>On track</b></div><div class="prop-balance"><small>Account equity</small><strong>$52,450.00</strong><span class="positive">+$2,450.00</span></div>{% for name,amount,width in [('Profit target','$2,450 / $3,000',82),('Daily loss used','$180 / $1,000',18),('Trailing drawdown','$550 / $2,500',22)] %}<div class="prop-progress"><div><span>{{ name }}</span><b>{{ amount }}</b></div><div class="progress-track"><span style="width:{{ width }}%"></span></div></div>{% endfor %}</div>
+{%- endmacro %}
+
+{% macro review() -%}
+<div class="art-window review-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Post-trade review</strong><small>Sample entry</small></div>{% set trade = sample.trades | selectattr("setup", "equalto", "Liquidity sweep") | first %}<div class="review-trade"><span class="market-symbol">NQ</span><div><h4>Liquidity sweep</h4><p>{{ trade.direction | title }} · New York AM · {{ trade.qty }} contract</p></div><b class="positive">{{ trade.net_pnl | money }}</b></div><div class="review-chart">{% include "partials/liquidity_sweep.svg" %}</div><div class="emotion-tags"><span>Calm</span><span>Patient</span><span>Followed plan</span></div><p class="review-note">“Waited for confirmation at my level. Managed the position according to the plan.”</p></div>
+{%- endmacro %}

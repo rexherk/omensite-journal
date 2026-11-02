@@ -1,0 +1,10 @@
+data/
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+*.env
+.design-backups/
+design-preview/
+.pytest_cache/

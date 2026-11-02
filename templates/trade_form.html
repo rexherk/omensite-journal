@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}{% if trade_id %}Edit trade{% else %}Log a trade{% endif %} · Omensite Journal{% endblock %}
+{% block body %}
+<h1>{% if trade_id %}Edit trade{% else %}Log a trade{% endif %}</h1>
+<p class="muted">P&amp;L, R, hold time, and excursions are calculated when you save. Leave session, kill zone, and macro on Auto to use New York time. Contract months such as MESZ6 are saved as the root.</p>
+<form method="post" action="{{ '/trades/' ~ trade_id if trade_id else '/trades' }}" data-steps>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <ol class="step-nav">
+    <li><button type="button" data-step="0" class="on">1 Bias</button></li>
+    <li><button type="button" data-step="1">2 ICT Checklist</button></li>
+    <li><button type="button" data-step="2">3 Execution</button></li>
+    <li><button type="button" data-step="3">4 Review</button></li>
+  </ol>
+
+  <section class="step on panel" data-step-panel="0">
+    <h2>Bias</h2>
+    <label>Session (New York)
+      <select name="session">
+        <option value="">Auto</option>
+        {% for name in session_choices %}
+        <option value="{{ name }}" {% if draft.session == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Kill zone
+      <select name="kill_zone">
+        <option value="">Auto</option>
+        {% for name in kill_choices %}
+        <option value="{{ name }}" {% if draft.kill_zone == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Macro
+      <select name="macro">
+        <option value="">Auto</option>
+        {% for name in macro_choices %}
+        <option value="{{ name }}" {% if draft.macro == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Setup<input name="setup" value="{{ draft.setup }}" maxlength="80"></label>
+    <label>HTF bias
+      <select name="htf_bias">
+        <option value="">Unset</option>
+        {% for name in bias_choices %}<option value="{{ name }}" {% if draft.htf_bias == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Draw on liquidity
+      <select name="draw">
+        <option value="">Unset</option>
+        {% for name in draw_choices %}<option value="{{ name }}" {% if draft.draw == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Premium / discount
+      <select name="premium">
+        <option value="">Unset</option>
+        {% for name in premium_choices %}<option value="{{ name }}" {% if draft.premium == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Dealing range high<input name="range_high" value="{{ draft.range_high }}" inputmode="decimal"></label>
+    <label>Dealing range low<input name="range_low" value="{{ draft.range_low }}" inputmode="decimal"></label>
+    <div class="actions"><button type="button" data-next>Next</button></div>
+  </section>
+
+  <section class="step panel" data-step-panel="1">
+    <h2>ICT concepts</h2>
+    <div class="pills">
+      {% for tag in tag_choices %}
+      <label><input type="checkbox" name="tags" value="{{ tag }}" {% if tag in draft.tags %}checked{% endif %}>{{ tag }}</label>
+      {% endfor %}
+    </div>
+    <h2>Checklist</h2>
+    <div class="checks">
+      {% for item in checks %}
+      <label><input class="check-item" type="checkbox" name="checks" value="{{ item.id }}" {% if item.id in draft.checks %}checked{% endif %}>{{ item.label }}</label>
+      {% endfor %}
+    </div>
+    <p id="grade-preview" class="muted"></p>
+    <label>Manual grade
+      <select name="grade_override">
+        <option value="">Use the checklist</option>
+        {% for name in grade_choices %}
+        <option value="{{ name }}" {% if draft.grade_override == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="actions">
+      <button type="button" class="ghost" data-prev>Back</button>
+      <button type="button" data-next>Next</button>
+    </div>
+  </section>
+
+  <section class="step panel" data-step-panel="2">
+    <h2>Execution</h2>
+    <label>Instrument
+      <input name="instrument" list="symbols" value="{{ draft.instrument }}" required>
+    </label>
+    <datalist id="symbols">
+      {% for spec in futures %}<option value="{{ spec.symbol }}">{{ spec.name }}</option>{% endfor %}
+    </datalist>
+    <label>Market
+      <select name="asset_class">
+        <option value="future" {% if draft.asset_class == "future" %}selected{% endif %}>Futures</option>
+        <option value="stock" {% if draft.asset_class == "stock" %}selected{% endif %}>Stock</option>
+      </select>
+    </label>
+    <label>Side
+      <select name="direction">
+        <option value="long" {% if draft.direction == "long" %}selected{% endif %}>Long</option>
+        <option value="short" {% if draft.direction == "short" %}selected{% endif %}>Short</option>
+      </select>
+    </label>
+    <label>Account
+      <select name="account_id">
+        {% for account in accounts %}
+        <option value="{{ account.id }}" {% if draft.account_id|string == account.id|string %}selected{% endif %}>{{ account.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Fees<input name="fees" value="{{ draft.fees }}" inputmode="decimal"></label>
+    <label>Stop<input name="stop" value="{{ draft.stop }}" inputmode="decimal"></label>
+    <label>Target<input name="target" value="{{ draft.target }}" inputmode="decimal"></label>
+    <label>Price against you (MAE)<input name="mae" value="{{ draft.mae }}" inputmode="decimal"></label>
+    <label>Best price in your favor (MFE)<input name="mfe" value="{{ draft.mfe }}" inputmode="decimal"></label>
+    <h2>Fills</h2>
+    <p class="muted">An entry adds size. An exit takes it off, including a partial. Same-second fills keep this row order.</p>
+    <div id="legs">
+      {% for leg in draft.legs %}
+      <div class="leg">
+        <label>Kind
+          <select name="leg_kind">
+            <option value="entry" {% if leg.kind == "entry" %}selected{% endif %}>Entry</option>
+            <option value="exit" {% if leg.kind == "exit" %}selected{% endif %}>Exit</option>
+          </select>
+        </label>
+        <label>Contracts or shares<input name="leg_qty" value="{{ leg.qty }}" inputmode="decimal"></label>
+        <label>Price<input name="leg_price" value="{{ leg.price }}" inputmode="decimal"></label>
+        <label>Time<input name="leg_time" type="datetime-local" value="{{ leg.time }}"></label>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="ghost" data-add-leg>Add fill</button>
+    <div class="actions">
+      <button type="button" class="ghost" data-prev>Back</button>
+      <button type="button" data-next>Next</button>
+    </div>
+  </section>
+
+  <section class="step panel" data-step-panel="3">
+    <h2>Review</h2>
+    <label>Emotion before
+      <select name="emotion_before">
+        <option value="">Unset</option>
+        {% for name in emotion_choices %}<option value="{{ name }}" {% if draft.emotion_before == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Emotion after
+      <select name="emotion_after">
+        <option value="">Unset</option>
+        {% for name in emotion_choices %}<option value="{{ name }}" {% if draft.emotion_after == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Confidence
+      <select name="confidence">
+        <option value="">Unset</option>
+        {% for n in range(1, 11) %}<option value="{{ n }}" {% if draft.confidence == n|string %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Followed the plan
+      <select name="followed_plan">
+        <option value="">Unset</option>
+        <option value="yes" {% if draft.followed_plan == "yes" %}selected{% endif %}>Yes</option>
+        <option value="no" {% if draft.followed_plan == "no" %}selected{% endif %}>No</option>
+      </select>
+    </label>
+    <h2>Mistakes</h2>
+    <div class="pills">
+      {% for tag in mistake_choices %}
+      <label><input type="checkbox" name="mistakes" value="{{ tag }}" {% if tag in draft.mistakes %}checked{% endif %}>{{ tag }}</label>
+      {% endfor %}
+    </div>
+    <label>What went right<textarea name="went_right">{{ draft.went_right }}</textarea></label>
+    <label>What went wrong<textarea name="went_wrong">{{ draft.went_wrong }}</textarea></label>
+    <label>Lesson<textarea name="lesson">{{ draft.lesson }}</textarea></label>
+    <label>Notes<textarea name="notes">{{ draft.notes }}</textarea></label>
+    <div class="actions">
+      <button type="button" class="ghost" data-prev>Back</button>
+      <button type="submit">Save trade</button>
+      {% if trade_id %}<a class="button ghost" href="/trades/{{ trade_id }}">Cancel</a>{% endif %}
+    </div>
+    <p class="muted">Charts attach on the trade page after you save: paste, drop, upload, or capture the screen.</p>
+  </section>
+</form>
+{% endblock %}

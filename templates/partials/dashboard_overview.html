@@ -1,0 +1,21 @@
+{% macro overview(dash, calendar, equity_svg, preview=false, account_filter='', range_key='all') -%}
+<div class="journal-overview" data-overview>
+  <div class="overview-stats">
+    <article class="overview-stat"><span>Net P&amp;L</span><strong class="{{ 'positive' if dash.net_pnl >= 0 else 'negative' }}" data-net-pnl="{{ dash.net_pnl }}">{{ dash.net_pnl | money }}</strong><small>{{ dash.closed_count }} closed trades{% if not preview %} · Selected range{% endif %}</small></article>
+    <article class="overview-stat"><span>Trade win rate</span><strong>{{ dash.win_rate | pct }}</strong><small>{{ dash.wins }} wins · {{ dash.losses }} losses{% if dash.closed_count - dash.wins - dash.losses %} · {{ dash.closed_count - dash.wins - dash.losses }} breakeven{% endif %}</small></article>
+    <article class="overview-stat"><span>Profit factor</span><strong>{% if not dash.closed_count %}—{% elif dash.profit_factor is none %}No losses{% else %}{{ dash.profit_factor | factor }}{% endif %}</strong><small>Gross wins ÷ gross losses</small></article>
+  </div>
+  <section class="overview-performance">
+    <div class="overview-viewbar"><h2>Performance overview</h2><div class="overview-tabs" aria-label="Performance view"><button type="button" data-overview-view="calendar" aria-pressed="true">Calendar</button><button type="button" data-overview-view="equity" aria-pressed="false">Equity</button></div></div>
+    <div data-overview-pane="calendar">
+      <div class="overview-calendar-bar"><div class="overview-month">{% if not preview %}<a href="/?month={{ calendar.previous }}&amp;range={{ range_key }}{% if account_filter %}&amp;account={{ account_filter }}{% endif %}" aria-label="Previous month">‹</a>{% endif %}<strong>{{ calendar.label }}</strong>{% if not preview %}<a href="/?month={{ calendar.next }}&amp;range={{ range_key }}{% if account_filter %}&amp;account={{ account_filter }}{% endif %}" aria-label="Next month">›</a>{% endif %}</div><span>Monthly P&amp;L <b class="{{ 'positive' if calendar.net_pnl >= 0 else 'negative' }}" data-month-pnl="{{ calendar.net_pnl }}">{{ calendar.net_pnl | money }}</b></span></div>
+      <div class="overview-calendar" aria-label="{{ calendar.label }} trading calendar">
+        {% for day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}<div class="overview-weekday">{{ day }}</div>{% endfor %}
+        {% for day in calendar.days %}<div class="overview-day {{ 'outside-month' if not day.in_month else 'day-win' if day.count and day.pnl > 0 else 'day-loss' if day.count and day.pnl < 0 else 'day-flat' if day.count else 'day-off' }}"{% if day.in_month %} data-date="{{ day.date }}" data-pnl="{{ day.pnl }}" data-trades="{{ day.count }}" aria-label="{{ day.date }}: {{ (day.pnl | money) ~ ', ' ~ day.count ~ ' trades' if day.count else 'No trades' }}"{% endif %}>{% if day.in_month %}<span class="overview-date">{{ day.day }}</span>{% if day.count %}<strong>{{ day.pnl | money }}</strong><small>{{ day.count }} {{ 'trade' if day.count == 1 else 'trades' }}</small><small>{{ day.win_rate | pct }}</small>{% endif %}{% endif %}</div>{% endfor %}
+      </div>
+      <p class="overview-calendar-note">Daily P&amp;L · {{ calendar.count }} closed trades · Blank days are days off.</p>
+    </div>
+    <div data-overview-pane="equity" hidden><div class="overview-calendar-bar"><strong>Cumulative net P&amp;L</strong><b class="{{ 'positive' if dash.net_pnl >= 0 else 'negative' }}">{{ dash.net_pnl | money }}</b></div><div class="overview-equity">{% if equity_svg %}{{ equity_svg | safe }}{% else %}<p>Your equity curve starts when a trade closes.</p>{% endif %}</div><p class="overview-calendar-note">Calculated from the same closed trades as your statistics.</p></div>
+  </section>
+</div>
+{%- endmacro %}

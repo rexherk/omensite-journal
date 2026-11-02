@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ book.name }} · Omensite Journal{% endblock %}
+{% block body %}
+<p><a href="/playbook">Playbook</a></p>
+<form class="panel" method="post" action="/playbook/{{ book.id }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Name<input name="name" value="{{ book.name }}" required></label>
+  <label>Setup<textarea name="setup">{{ book.setup or "" }}</textarea></label>
+  <label>Rules<textarea name="rules">{{ book.rules or "" }}</textarea></label>
+  <label>Notes<textarea name="example_notes">{{ book.example_notes or "" }}</textarea></label>
+  <button type="submit">Save</button>
+</form>
+<form method="post" action="/playbook/{{ book.id }}/delete" onsubmit="return confirm('Delete this setup?');">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <button class="danger" type="submit">Delete setup</button>
+</form>
+<section class="panel">
+  <h2>Example charts</h2>
+  {% for image in images %}
+  <figure>
+    <img src="/playbook-media/{{ image.id }}" alt="Example chart" style="max-width:100%; border-radius:8px">
+    <form method="post" action="/playbook/{{ book.id }}/images/{{ image.id }}/delete">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="ghost" type="submit">Remove</button>
+    </form>
+  </figure>
+  {% else %}<p class="muted">No example screenshots yet.</p>{% endfor %}
+  <form method="post" action="/playbook/{{ book.id }}/images" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Image<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
+    <button type="submit">Add image</button>
+  </form>
+</section>
+{% endblock %}

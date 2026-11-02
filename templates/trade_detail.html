@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{{ trade.instrument }} · Omensite Journal{% endblock %}
+{% block body %}
+<div data-shot-action="/trades/{{ trade.id }}/shots">
+  <div class="actions">
+    <h1>{{ trade.instrument }} <span class="muted">{{ trade.direction }}</span></h1>
+    <a class="button" href="/trades/{{ trade.id }}/edit">Edit</a>
+    <form method="post" action="/trades/{{ trade.id }}/delete" onsubmit="return confirm('Delete this trade?');">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="danger" type="submit">Delete</button>
+    </form>
+  </div>
+  <p>{{ trade.account_name }} · {{ trade.asset_class }} {% if not trade.is_closed %}<span class="brass">Still open</span>{% endif %}</p>
+  {% for item in news %}
+  <p class="error">Opened {{ item.minutes }} minutes from {{ item.title }}.</p>
+  {% endfor %}
+  {% for warning in warnings %}<p class="error">{{ warning }}</p>{% endfor %}
+
+  <div class="detail-tabs" data-tabs>
+    <button type="button" data-tab="overview" class="on">Overview</button>
+    <button type="button" data-tab="chart">Chart</button>
+    <button type="button" data-tab="ict">ICT Analysis</button>
+    <button type="button" data-tab="psych">Psychology</button>
+  </div>
+
+  <div data-tab-panel="overview">
+  <section class="stats">
+    <div class="stat"><span>Net</span><strong class="{{ 'up' if trade.net_pnl > 0 else 'down' if trade.net_pnl < 0 else '' }}">{{ trade.net_pnl | money }}</strong></div>
+    <div class="stat"><span>Gross</span><strong>{{ trade.gross_pnl | money }}</strong></div>
+    <div class="stat"><span>Points</span><strong>{{ trade.points | plain }}</strong></div>
+    <div class="stat"><span>Ticks</span><strong>{{ trade.ticks | plain }}</strong></div>
+    <div class="stat"><span>R</span><strong>{{ trade.r_multiple | rmult }}</strong></div>
+    <div class="stat"><span>Planned R</span><strong>{{ trade.planned_r | rmult }}</strong></div>
+    <div class="stat"><span>Risk</span><strong>{{ trade.risk_dollars | money }}</strong></div>
+    <div class="stat"><span>Hold</span><strong>{{ trade.hold_seconds | hold }}</strong></div>
+    <div class="stat"><span>MAE</span><strong>{{ trade.mae_dollars | money }}</strong></div>
+    <div class="stat"><span>MFE</span><strong>{{ trade.mfe_dollars | money }}</strong></div>
+    <div class="stat"><span>Left on table</span><strong>{{ trade.left_on_table | money }}</strong></div>
+    <div class="stat"><span>Grade</span><strong>{{ trade.grade or "—" }}{% if trade.auto_grade and trade.grade_manual %} <span class="muted">checklist {{ trade.auto_grade }}</span>{% endif %}</strong></div>
+  </section>
+
+  <section class="panel">
+    <h2>Fills</h2>
+    <p class="muted">Opened {{ when }}{% if trade.closed_at %} · Closed {{ closed_label }}{% endif %} · Size in {{ trade.qty_entered | plain }} · Out {{ trade.qty_exited | plain }} · Open {{ trade.open_qty | plain }}</p>
+    <p>Average entry {{ trade.avg_entry | plain }} · Average exit {{ trade.avg_exit | plain }} · Stop {{ trade.stop | plain }} · Target {{ trade.target | plain }} · Fees {{ trade.fees | money }}</p>
+    <table>
+      <tr><th>Kind</th><th>Size</th><th>Price</th><th>Time</th></tr>
+      {% for leg in legs %}
+      <tr><td>{{ leg.kind }}</td><td class="num">{{ leg.qty | plain }}</td><td class="num">{{ leg.price | plain }}</td><td>{{ leg.when }}</td></tr>
+      {% endfor %}
+    </table>
+  </section>
+  </div>
+
+  <div data-tab-panel="ict">
+  <section class="panel">
+    <h2>ICT</h2>
+    <p>Session {{ trade.session }} · Kill zone {{ trade.kill_zone }} · Macro {{ trade.macro_window }}</p>
+    <p>Bias {{ trade.htf_bias or "—" }} · Draw {{ trade.draw or "—" }} · {{ trade.premium or "Premium not set" }}</p>
+    {% if trade.range_high or trade.range_low %}<p>Dealing range {{ trade.range_low | plain }} to {{ trade.range_high | plain }}</p>{% endif %}
+    {% if trade.setup %}<p>Setup {{ trade.setup }}</p>{% endif %}
+    <p>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No concept tags.</span>{% endfor %}</p>
+    <h3>Checklist</h3>
+    <ul>
+      {% for item in checks %}
+      <li>{{ "Yes" if item.checked else "No" }} — {{ item.label }}</li>
+      {% else %}
+      <li class="muted">No checklist answers on this trade.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  </div>
+  <div data-tab-panel="psych">
+  <section class="panel two">
+    <div>
+      <h2>Psychology</h2>
+      <p>Before {{ trade.emotion_before or "—" }} · After {{ trade.emotion_after or "—" }}</p>
+      <p>Confidence {{ trade.confidence if trade.confidence is not none else "—" }}</p>
+      <p>Followed the plan {% if trade.followed_plan == 1 %}yes{% elif trade.followed_plan == 0 %}no{% else %}not answered{% endif %}</p>
+      <p>{% for tag in mistakes %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No mistake tags.</span>{% endfor %}</p>
+    </div>
+    <div>
+      <h2>Review</h2>
+      <p><strong>Right.</strong> {{ trade.went_right or "—" }}</p>
+      <p><strong>Wrong.</strong> {{ trade.went_wrong or "—" }}</p>
+      <p><strong>Lesson.</strong> {{ trade.lesson or "—" }}</p>
+      {% if trade.notes %}<p>{{ trade.notes }}</p>{% endif %}
+    </div>
+  </section>
+  </div>
+
+  <div data-tab-panel="chart">
+  <section class="slots">
+    {% for slot in slots %}
+    <article class="panel" data-slot="{{ slot.key }}">
+      <h2>{{ slot.label }}</h2>
+      {% if slot.shot %}
+      <div class="mark chart-wrap" data-save="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/markup" data-csrf="{{ csrf }}">
+        <img src="/media/{{ slot.shot.id }}" alt="{{ slot.label }} chart">
+        <canvas data-shapes="{{ slot.shot.markup_json }}"></canvas>
+        <div class="tools">
+          <button type="button" data-tool="arrow" class="on">Arrow</button>
+          <button type="button" data-tool="box">Box</button>
+          <button type="button" data-tool="line">Line</button>
+          <button type="button" data-tool="text">Text</button>
+          {% for color in ["#d7b56d", "#e08b7d", "#7dcea0", "#e7e4dc", "#8eb4e8"] %}
+          <button type="button" class="swatch {% if loop.first %}on{% endif %}" data-color="{{ color }}" style="background: {{ color }}"></button>
+          {% endfor %}
+          <button type="button" class="ghost" data-undo>Undo</button>
+          <button type="button" class="ghost" data-clear>Clear</button>
+          <button type="button" data-save-markup>Save markup</button>
+        </div>
+        <p class="markup-status muted"></p>
+      </div>
+      <form method="post" action="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/delete">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="ghost" type="submit">Remove image</button>
+      </form>
+      {% else %}
+      <p class="muted">No chart in this slot yet.</p>
+      {% endif %}
+      <form method="post" action="/trades/{{ trade.id }}/shots" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="slot" value="{{ slot.key }}">
+        <label>Upload<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+        <div class="actions">
+          <button type="submit">Upload</button>
+          <button type="button" class="ghost" data-capture="{{ slot.key }}">Capture screen</button>
+        </div>
+        <p class="capture-error muted"></p>
+      </form>
+      <p class="muted">Paste with Ctrl+V while this card is under the pointer, or drop an image on it.</p>
+    </article>
+    {% endfor %}
+  </section>
+
+  {% if embed %}
+  <section class="panel">
+    <h2>Chart</h2>
+    <p>Entry was {{ when }}. Scroll the widget back to that time. This is a live TradingView chart, not a replay.</p>
+    <p><a href="{{ embed.link }}" target="_blank" rel="noopener">Open {{ embed.symbol }} in TradingView</a></p>
+    <iframe title="TradingView chart" src="{{ embed.embed }}" width="100%" height="420" style="border:0"></iframe>
+  </section>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/markup.js"></script>{% endblock %}

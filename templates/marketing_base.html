@@ -1,0 +1,13 @@
+{% from "partials/brand.html" import logo %}
+{% from "partials/landing_visuals.html" import icon %}
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf }}"><meta name="description" content="Omensite Journal — your trades, your patterns, your edge. A trading field journal with Topstep CSV imports, analytics, and reviews."><meta name="theme-color" content="#ffffff"><title>{% block title %}Omensite Journal{% endblock %}</title>
+<link rel="icon" href="/static/brand-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/static/css/brand.css?v=white-1"><link rel="stylesheet" href="/static/css/landing.css?v=site-pages-1"><link rel="stylesheet" href="/static/css/public-pages.css?v=discord-only-1"><link rel="stylesheet" href="/static/css/marketing-white.css?v=1"><link rel="stylesheet" href="/static/css/overview.css?v=1"><script src="/static/js/overview.js?v=1" defer></script><script src="/static/js/landing.js?v=site-pages-1" defer></script>
+</head><body class="{% block body_class %}{% endblock %}"><a class="skip-link" href="#main">Skip to content</a>
+{% include "partials/marketing_header.html" %}
+{% if error or notice %}<div class="feedback {{ 'feedback-error' if error else '' }}" role="{{ 'alert' if error else 'status' }}">{{ error or notice }}</div>{% endif %}
+<main id="main">{% block content %}{% endblock %}</main>
+{% include "partials/marketing_footer.html" %}
+<button class="help-launcher" type="button" aria-label="Open journal help" data-guide="help">{{ icon('chat') }}</button>
+<dialog id="guide-dialog" class="guide-dialog"><button class="dialog-close" type="button" aria-label="Close guide" data-close-dialog>{{ icon('close') }}</button><div id="guide-content"></div></dialog>
+</body></html>

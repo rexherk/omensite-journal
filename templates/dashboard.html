@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Omensite Journal{% endblock %}
+{% from "partials/dashboard_overview.html" import overview %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <p class="kicker">Overview</p>
+    <h1>Dashboard</h1>
+    <p class="muted">Your trading, at a glance.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="/trades/new">Log a trade</a>
+    <a class="button ghost" href="/import">Import fills</a>
+    <a class="button ghost" href="/report">Print / PDF</a>
+  </div>
+</div>
+
+<form class="pill-row" method="get" action="/">
+  <a class="pill-toggle {% if not account_filter %}on{% endif %}" href="/?range={{ range_key }}">All accounts</a>
+  {% for account in accounts %}
+  <a class="pill-toggle {% if account_filter == account.id|string %}on{% endif %}" href="/?account={{ account.id }}&range={{ range_key }}">{{ account.name }}</a>
+  {% endfor %}
+  {% for key, label in [("7d", "7D"), ("30d", "30D"), ("mtd", "MTD"), ("all", "All")] %}
+  <a class="pill-toggle {% if range_key == key %}on{% endif %}" href="/?range={{ key }}{% if account_filter %}&account={{ account_filter }}{% endif %}">{{ label }}</a>
+  {% endfor %}
+</form>
+
+{% if dash.closed_count == 0 and dash.open_count == 0 %}
+<section class="panel empty-hero">
+  <h2>The desk is clear</h2>
+  <p>Log a fill, import a CSV, or load the sample journal from Settings. Comparisons appear once three trades are closed.</p>
+  <div class="actions">
+    <a class="button" href="/trades/new">Log a trade</a>
+    <a class="button ghost" href="/settings">Load sample journal</a>
+  </div>
+</section>
+{% elif dash.closed_count == 0 %}
+<section class="panel"><p>{{ dash.open_count }} open {{ "trade" if dash.open_count == 1 else "trades" }}. Closed stats appear when a position is flat.</p></section>
+{% endif %}
+
+{{ overview(dash, calendar, equity_svg, account_filter=account_filter, range_key=range_key) }}
+
+<section class="dashboard-details"><div class="panel-label"><h2>The details behind your performance</h2></div>
+<section class="stats">
+  <div class="stat"><span>Expectancy</span><strong>{% if dash.closed_count %}{{ dash.expectancy | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Average R</span><strong class="count" {% if dash.average_r is not none %}data-count="{{ dash.average_r }}" data-kind="r"{% endif %}>{{ dash.average_r | rmult }}</strong></div>
+  <div class="stat"><span>Average win</span><strong>{{ dash.average_win | money }}</strong></div>
+  <div class="stat"><span>Average loss</span><strong>{{ dash.average_loss | money }}</strong></div>
+  <div class="stat"><span>Max drawdown</span><strong>{% if dash.closed_count %}{{ dash.max_drawdown | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Rule-break P&amp;L</span><strong>{% if dash.closed_count %}{{ dash.rule_break_pnl | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Left on table</span><strong>{% if dash.closed_count %}{{ dash.left_on_table | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Current streak</span><strong class="count" {% if dash.streak.kind %}data-count="{{ dash.streak.current }}" data-kind="int" data-suffix=" {{ dash.streak.kind }}"{% endif %}>{% if dash.streak.kind %}{{ dash.streak.current }} {{ dash.streak.kind }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Best / worst streak</span><strong>{% if dash.closed_count %}{{ dash.streak.win }} / {{ dash.streak.loss }}{% else %}—{% endif %}</strong></div>
+</section>
+</section>
+<section class="panel">
+  <div class="panel-label"><h2>What the journal sees</h2></div>
+  {% if dash.insights %}
+  <ul class="insights">
+    {% for line in dash.insights %}<li>{{ line }}</li>{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Comparisons appear once three trades are closed.</p>
+  {% endif %}
+</section>
+<section class="panel">
+  <h2>Prop accounts</h2>
+  {% if props %}
+    {% for row in props %}
+    <article class="prop-card">
+      <h3>{{ row.account.name }}</h3>
+      {% if row.account.daily_loss_limit %}
+      {% set used = (-row.today_pnl / row.account.daily_loss_limit) if row.today_pnl < 0 else 0 %}
+      <p>Daily loss limit</p>
+      <div class="bar-track"><span class="bar-fill {% if row.daily_hit or used >= 0.9 %}hot{% elif used >= 0.7 %}warm{% endif %}" style="width: {{ (used if used < 1 else 1) * 100 }}%"></span></div>
+      {% endif %}
+      {% if row.account.trailing_drawdown %}
+      {% set used = row.drawdown / row.account.trailing_drawdown %}
+      <p>Max drawdown</p>
+      <div class="bar-track"><span class="bar-fill {% if row.trail_hit or used >= 0.9 %}hot{% elif used >= 0.7 %}warm{% endif %}" style="width: {{ (used if used < 1 else 1) * 100 }}%"></span></div>
+      {% endif %}
+      {% if row.consistency_pct and row.best_share is not none %}
+      {% set rule = row.consistency_pct / 100 %}
+      {% set used = (row.best_share / rule) if rule else 0 %}
+      <p>Consistency {{ row.consistency_pct | plain }}%</p>
+      <div class="bar-track"><span class="bar-fill {% if used >= 1 %}hot{% elif used >= 0.7 %}warm{% endif %}" style="width: {{ (used if used < 1 else 1) * 100 }}%"></span></div>
+      {% endif %}
+      <p>Equity {{ row.equity | money }} · Today {{ row.today_pnl | money }} · Total {{ row.total_pnl | money }}</p>
+      <p>Daily loss left {{ row.daily_left | money }} · Trailing room {{ row.trail_left | money }} · Drawdown used {{ row.drawdown | money }}</p>
+      <p>Profit target progress {{ row.target_ratio | pct }}</p>
+      {% if row.daily_hit %}<p class="down">Daily loss limit is hit.</p>{% endif %}
+      {% if row.trail_hit %}<p class="down">Trailing drawdown is hit.</p>{% endif %}
+    </article>
+    {% endfor %}
+  {% else %}
+  <p class="muted">Add a prop account in Settings to track a daily loss limit, trailing drawdown, and payout target.</p>
+  {% endif %}
+</section>
+
+{% if dash.closed_count %}
+<section class="split">
+  {% for section in sections %}
+  <article class="panel">
+    <h2>{{ section.title }}</h2>
+    <div class="scroll">
+      <table>
+        <tr><th>Name</th><th>Trades</th><th>Win rate</th><th>Avg R</th><th>Net</th></tr>
+        {% for row in section.rows %}
+        <tr>
+          <td>{{ row.name }}<span class="bar" style="width: {{ row.bar }}%"></span></td>
+          <td class="num">{{ row.count }}</td>
+          <td class="num">{{ row.win_rate | pct }}</td>
+          <td class="num">{{ row.average_r | rmult }}</td>
+          <td class="num {{ 'up' if row.pnl > 0 else 'down' if row.pnl < 0 else '' }}">{{ row.pnl | money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Nothing in this split yet.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Recent</h2>
+  {% if recent %}
+  <div class="scroll">
+    <table>
+      <tr><th>When</th><th>Market</th><th>Side</th><th>Net</th><th>R</th><th></th></tr>
+      {% for trade in recent %}
+      <tr>
+        <td>{{ trade.when }}</td>
+        <td><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a>{% if trade.news %} <span class="tag news">News</span>{% endif %}</td>
+        <td>{{ trade.direction }}
+          {% if trade.grade == "A+" %}<span class="pill-tag good">A+ Setup</span>{% endif %}
+          {% if trade.followed_plan == 0 %}<span class="pill-tag bad">Rule Broken</span>{% endif %}
+          {% if "Revenge trade" in trade.mistakes %}<span class="pill-tag bad">Revenge</span>{% endif %}
+          {% if trade.news %}<span class="pill-tag warn">News Day</span>{% endif %}
+          {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
+        </td>
+        <td class="num {{ 'up' if trade.net_pnl > 0 else 'down' if trade.net_pnl < 0 else '' }}">{{ trade.net_pnl | money }}</td>
+        <td class="num">{{ trade.r_multiple | rmult }}</td>
+        <td>{% if not trade.is_closed %}Open{% else %}{{ trade.grade or "—" }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No fills yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

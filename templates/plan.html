@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Plan · Omensite Journal{% endblock %}
+{% block body %}
+<h1>Day plan</h1>
+<form class="filters" method="get" action="/plan">
+  <label>Date<input type="date" name="day" value="{{ day }}"></label>
+  <button type="submit">Open</button>
+</form>
+<form class="panel" method="post" action="/plan">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="day" value="{{ day }}">
+  <label>Bias
+    <select name="bias">
+      <option value="">Unset</option>
+      {% for name in bias_choices %}<option value="{{ name }}" {% if plan.bias == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Key levels<textarea name="key_levels">{{ plan.key_levels or "" }}</textarea></label>
+  <label>Draw on liquidity
+    <select name="draw">
+      <option value="">Unset</option>
+      {% for name in draw_choices %}<option value="{{ name }}" {% if plan.draw == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>News to watch<textarea name="news_to_watch">{{ plan.news_to_watch or "" }}</textarea></label>
+  <label>End-of-day review<textarea name="eod_review">{{ plan.eod_review or "" }}</textarea></label>
+  <button type="submit">Save {{ day }}</button>
+</form>
+<section class="panel">
+  <h2>Trades opened this day</h2>
+  {% for trade in opened %}
+  <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }} {{ trade.direction }}</a> {{ trade.net_pnl | money }} · {{ trade.r_multiple | rmult }}</p>
+  {% else %}
+  <p class="muted">No trade opened on this date in your timezone.</p>
+  {% endfor %}
+</section>
+{% endblock %}
