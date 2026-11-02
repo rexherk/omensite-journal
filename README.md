@@ -35,7 +35,7 @@ The root `Dockerfile` runs the current FastAPI website on `0.0.0.0:$PORT` (8080 
 
 The PostgreSQL schema is checked in at `migrations/001_initial_postgres.sql`. Startup applies unapplied migrations inside a transaction, guarded by an advisory lock. You can also run `python -m app.migrate` explicitly. The migration is additive and records its version in `schema_migrations`.
 
-Use the hosting platform's database attachment to inject `DATABASE_URL` over its private network. Native attachment requires the database and repository server to have the same owner. Shared database write access permits schema queries but does not grant native connection credentials or cross-owner server attachment.
+Use the hosting platform's database attachment to inject `DATABASE_URL` over its private network. Native attachment requires current write access to both the database and repository server; either resource may be shared with you and they may have different owners. Shared connections remain active while that access remains valid. Revealing native connection credentials remains restricted to the database owner.
 
 Set `OMENSITE_DISCORD_CLIENT_ID` and `OMENSITE_DISCORD_CLIENT_SECRET` in the server's encrypted environment. Register the public address followed by `/auth/discord/callback` on that Discord application, for example `https://journal.omensite.com/auth/discord/callback`.
 
