@@ -590,7 +590,7 @@ main { animation: rise 0.45s ease; }
   color: var(--ink);
   border-color: transparent;
 }
-.pill-tag { display: inline-block; margin: 0.15rem 0.2rem 0.15rem 0; color: #e8ffb0; }
+.pill-tag { display: inline-block; margin: 0.15rem 0.2rem 0.15rem 0; color: var(--oj-deep-green); }
 .pill-tag.good { color: var(--up); border-color: rgba(34, 197, 94, 0.45); }
 .pill-tag.bad { color: var(--down); border-color: rgba(239, 68, 68, 0.5); }
 .pill-tag.warn { color: var(--warn); border-color: rgba(245, 158, 11, 0.5); }
