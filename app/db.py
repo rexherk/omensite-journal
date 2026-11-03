@@ -813,6 +813,13 @@ def sample_count(conn, user_id: int, note: str) -> int:
     return int(row["n"] if row else 0)
 
 
+def lock_demo_seed(conn) -> None:
+    if is_postgres(conn):
+        conn.execute("SELECT 1 FROM pg_advisory_xact_lock(654719033)")
+    else:
+        conn.execute("BEGIN IMMEDIATE")
+
+
 def store_media(conn, user_id: int, filename: str, content: bytes) -> None:
     conn.execute("INSERT INTO media_blobs (user_id, filename, content) VALUES (?, ?, ?)", (user_id, filename, content))
 

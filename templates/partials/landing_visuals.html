@@ -38,7 +38,7 @@
 {%- endmacro %}
 
 {% macro report() -%}
-<div class="art-window report-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Performance report</strong><small>Sample journal</small></div><div class="report-summary"><div><small>Net profit</small><strong class="positive">{{ sample.dash.net_pnl | money }}</strong></div><div><small>Average R</small><strong>{{ sample.dash.average_r | rmult }}</strong></div><div><small>Win rate</small><strong>{{ sample.dash.win_rate | pct }}</strong></div></div>{{ equity() }}<div class="report-tags"><span>By setup</span><span>By session</span><span>By emotion</span><span>By instrument</span></div></div>
+<div class="art-window report-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Performance report</strong><small>Sample journal</small></div><div class="report-summary"><div><small>Net P&amp;L</small><strong class="{{ 'positive' if sample.dash.net_pnl >= 0 else 'negative' }}">{{ sample.dash.net_pnl | money }}</strong></div><div><small>Average R</small><strong>{{ sample.dash.average_r | rmult }}</strong></div><div><small>Win rate</small><strong>{{ sample.dash.win_rate | pct }}</strong></div></div>{{ equity() }}<div class="report-tags"><span>By setup</span><span>By session</span><span>By emotion</span><span>By instrument</span></div></div>
 {%- endmacro %}
 
 {% macro playbook() -%}
@@ -50,9 +50,22 @@
 {%- endmacro %}
 
 {% macro prop() -%}
-<div class="art-window prop-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Prop account overview</strong><small>Sample account</small></div><div class="prop-name"><span>{{ icon('case') }}</span><div><h4>My funded account</h4><p>$50,000 starting balance</p></div><b>On track</b></div><div class="prop-balance"><small>Account equity</small><strong>$52,450.00</strong><span class="positive">+$2,450.00</span></div>{% for name,amount,width in [('Profit target','$2,450 / $3,000',82),('Daily loss used','$180 / $1,000',18),('Trailing drawdown','$550 / $2,500',22)] %}<div class="prop-progress"><div><span>{{ name }}</span><b>{{ amount }}</b></div><div class="progress-track"><span style="width:{{ width }}%"></span></div></div>{% endfor %}</div>
+{% set row = sample.prop %}
+{% set account = row.account %}
+<div class="art-window prop-art">
+  <div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Prop account overview</strong><small>Sample account</small></div>
+  <div class="prop-name"><span>{{ icon('case') }}</span><div><h4>{{ account.name }}</h4><p>{{ account.starting_balance | money }} starting balance</p></div><b>{{ 'Limit reached' if row.daily_hit or row.trail_hit else 'Within limits' }}</b></div>
+  <div class="prop-balance"><small>Account equity</small><strong>{{ row.equity | money }}</strong><span class="{{ 'positive' if row.total_pnl >= 0 else 'negative' }}">{{ '+' if row.total_pnl > 0 else '' }}{{ row.total_pnl | money }}</span></div>
+  {% for name, used, limit in [
+    ('Profit target', row.total_pnl, account.profit_target),
+    ('Daily loss used', [0, -row.today_pnl] | max, account.daily_loss_limit),
+    ('Trailing drawdown', row.drawdown, account.trailing_drawdown)
+  ] %}
+  <div class="prop-progress"><div><span>{{ name }}</span><b>{{ used | money }} / {{ limit | money }}</b></div><div class="progress-track"><span style="width:{{ [100, [0, 100 * used / limit] | max] | min }}%"></span></div></div>
+  {% endfor %}
+</div>
 {%- endmacro %}
 
 {% macro review() -%}
-<div class="art-window review-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Post-trade review</strong><small>Sample entry</small></div>{% set trade = sample.trades | selectattr("setup", "equalto", "Liquidity sweep") | first %}<div class="review-trade"><span class="market-symbol">NQ</span><div><h4>Liquidity sweep</h4><p>{{ trade.direction | title }} · New York AM · {{ trade.qty }} contract</p></div><b class="positive">{{ trade.net_pnl | money }}</b></div><div class="review-chart">{% include "partials/liquidity_sweep.svg" %}</div><div class="emotion-tags"><span>Calm</span><span>Patient</span><span>Followed plan</span></div><p class="review-note">“Waited for confirmation at my level. Managed the position according to the plan.”</p></div>
+<div class="art-window review-art"><div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Post-trade review</strong><small>Sample entry</small></div>{% set trade = sample.review %}{% if trade %}<div class="review-trade"><span class="market-symbol">{{ trade.instrument }}</span><div><h4>Liquidity sweep</h4><p>{{ trade.direction | title }} · {{ trade.session }} · {{ trade.qty }} {{ 'contract' if trade.qty == 1 else 'contracts' }}</p></div><b class="positive">{{ trade.net_pnl | money }}</b></div>{% endif %}<div class="review-chart">{% include "partials/liquidity_sweep.svg" %}</div><div class="emotion-tags"><span>Calm</span><span>Patient</span><span>Followed plan</span></div><p class="review-note">“Waited for confirmation at my level. Managed the position according to the plan.”</p></div>
 {%- endmacro %}

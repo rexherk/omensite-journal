@@ -38,6 +38,7 @@ from app.instruments import future_root, parse_symbol, spec_for
 from app.news_data import CAVEAT
 from app.paths import import_dir, upload_path
 from app.present import equity_svg
+from app.sample_data import DEMO_EMAIL, DEMO_NOTE, DEMO_PROP, sample_trades
 from app.services_error import JournalError
 from app import db
 
@@ -785,49 +786,49 @@ def complete_reset(conn, token: str, password: str) -> None:
     db.delete_reset(conn, token)
 
 
-def open_demo(conn) -> int:
-    email = "demo@omensite.journal"
-    user = db.user_by_email(conn, email)
+def open_demo(conn, through: date) -> int:
+    db.lock_demo_seed(conn)
+    user = db.user_by_email(conn, DEMO_EMAIL)
     if user is None:
-        user_id = _provision(conn, email, new_token(), None, None)
+        user_id = _provision(conn, DEMO_EMAIL, new_token(), None, None)
         db.set_onboarded(conn, user_id, 1)
         user = db.user_by_id(conn, user_id)
-    else:
-        user_id = int(user["id"])
-        db.set_onboarded(conn, user_id, 1)
-    load_demo_sample(conn, user)
-    return user_id
+    _load_demo_sample(conn, user, through)
+    return int(user["id"])
 
 
-def load_demo_sample(conn, user: dict) -> None:
-    """Refresh only the disposable demo account from the public sample dataset."""
-    from app.sample_data import sample_trades
-
-    if user["email"] != "demo@omensite.journal":
-        raise JournalError("The demo dataset belongs to the demo workspace.")
-    records = sample_trades()
-    marker = "Omensite demo v3 " + records[-1]["closed_at"][:7]
-    if db.sample_count(conn, user["id"], marker) == len(records):
+def _load_demo_sample(conn, user: dict, through: date) -> None:
+    """Migrate the old sample once, then append new sessions under the seed lock."""
+    records = sample_trades(through)
+    existing = db.sample_count(conn, user["id"], DEMO_NOTE)
+    if existing >= len(records):
         return
-    for trade in db.trades(conn, user["id"]):
-        if trade.get("notes") == SAMPLE_NOTE or (trade.get("notes") or "").startswith(("Omensite demo v2 ", "Omensite demo v3 ")):
-            db.delete_trade(conn, user["id"], trade["id"])
+    if not existing:
+        for trade in db.trades(conn, user["id"]):
+            note = trade["notes"] or ""
+            if note == SAMPLE_NOTE or note.startswith(("Omensite demo v2 ", "Omensite demo v3 ")):
+                db.delete_trade(conn, user["id"], trade["id"])
     accounts = db.accounts(conn, user["id"])
     personal_id = next(row["id"] for row in accounts if row["kind"] == "personal")
-    prop_id = next((row["id"] for row in accounts if row["name"] == "Sample Prop"), None)
+    prop_id = next((row["id"] for row in accounts if row["name"] == DEMO_PROP["name"]), None)
     if prop_id is None:
-        prop_id = db.insert_account(conn, user["id"], "Sample Prop", "prop", 50000, 1000, 2000, 6000)
+        prop_id = db.insert_account(
+            conn, user["id"], DEMO_PROP["name"], DEMO_PROP["kind"], DEMO_PROP["starting_balance"],
+            DEMO_PROP["daily_loss_limit"], DEMO_PROP["trailing_drawdown"], DEMO_PROP["profit_target"],
+        )
     checks = [{"item_id": item["id"], "checked": 1} for item in db.checklist(conn, user["id"]) if item["active"]]
-    for index, record in enumerate(records):
+    for record in records[existing:]:
         moment = datetime.fromisoformat(record["opened_at"]).replace(tzinfo=NY)
+        closed = datetime.fromisoformat(record["closed_at"]).replace(tzinfo=NY)
         legs = [Leg("entry", record["qty"], record["entry"], moment),
-                Leg("exit", record["qty"], record["exit"], moment + timedelta(minutes=18 + index % 29))]
+                Leg("exit", record["qty"], record["exit"], closed)]
         fields, leg_rows = compose(
             zone=user_zone(user), instrument=record["instrument"], asset_class="future",
             direction=record["direction"], fees=record["fees"], legs=legs,
             stop=record["stop"],
-            account_id=prop_id if index % 3 else personal_id,
-            setup=record["setup"], grade=record["grade"], notes=marker,
+            account_id=prop_id if record["is_prop"] else personal_id,
+            session=record["session"], kill_zone=record["kill_zone"],
+            setup=record["setup"], grade=record["grade"], notes=DEMO_NOTE,
             emotion_before=record["emotion_before"], emotion_after="Reflective",
             followed_plan=record["followed_plan"],
             lesson="Wait for confirmation at the level. Review execution after the session.",

@@ -5,12 +5,14 @@ from __future__ import annotations
 import html
 import json
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from app import db
 from app.auth import ANON, COOKIE, new_token, same_text
@@ -37,7 +39,7 @@ from app.catalog import (
 )
 from app.firms import FIRMS
 from app.public_pages import PUBLIC_PAGES, PRODUCT_PAGES, SOLUTION_PAGES, RESOURCE_PAGES
-from app.sample_data import sample_overview
+from app.sample_data import DEMO_EMAIL, DEMO_NOTE, sample_overview, sample_through, sample_trades
 from app.instruments import FUTURES
 from app.present import factor, hold, money, pct, plain, rmult
 from app.services import (
@@ -87,7 +89,6 @@ from app.services import (
 from app.services_error import JournalError as FormError
 
 DEMO_COOKIE = "omensite_demo"
-DEMO_EMAIL = "demo@omensite.journal"
 
 ROOT = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
@@ -151,12 +152,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Omensite Journal", lifespan=lifespan)
 
 
+def sync_demo(through: date) -> None:
+    with db.session() as conn:
+        open_demo(conn, through)
+
+
 @app.middleware("http")
 async def attach_user(request: Request, call_next):
     request.state.user = None
     request.state.csrf = ""
     request.state.new_anon = None
     request.state.demo_mode = False
+    request.state.sample_through = sample_through()
+    refresh_demo = False
     if not request.url.path.startswith("/static"):
         with db.session() as conn:
             demo_token = request.cookies.get(DEMO_COOKIE)
@@ -168,6 +176,11 @@ async def attach_user(request: Request, call_next):
                 request.state.user = row
                 request.state.csrf = row["csrf"]
                 request.state.demo_mode = row["email"] == DEMO_EMAIL
+                if (request.state.demo_mode and request.method == "GET"
+                        and request.url.path not in {"/demo", "/demo/exit"}):
+                    refresh_demo = db.sample_count(conn, row["id"], DEMO_NOTE) < len(
+                        sample_trades(request.state.sample_through)
+                    )
             if not request.state.csrf:
                 anon = request.cookies.get(ANON)
                 if not anon:
@@ -175,6 +188,8 @@ async def attach_user(request: Request, call_next):
                     request.state.new_anon = anon
                 request.state.csrf = anon
     try:
+        if refresh_demo:
+            await run_in_threadpool(sync_demo, request.state.sample_through)
         if (request.state.demo_mode and request.method not in {"GET", "HEAD", "OPTIONS"}
                 and request.url.path not in {"/logout", "/demo"}):
             response = render(request, "error.html", 403, message="This demo is read-only.",
@@ -230,7 +245,8 @@ def render(request: Request, name: str, status: int = 200, **extra):
     extra.setdefault("error", "")
     extra.setdefault("demo_mode", getattr(request.state, "demo_mode", False))
     extra.setdefault("auth_mode", "login")
-    extra.setdefault("sample", sample_overview())
+    if name in {"home.html", "public_page.html"}:
+        extra.setdefault("sample", sample_overview(request.state.sample_through))
     return templates.TemplateResponse(request, name, extra, status_code=status)
 
 
@@ -306,7 +322,7 @@ def exit_demo(request: Request):
 @app.get("/demo")
 def enter_demo(request: Request):
     with db.session() as conn:
-        user_id = open_demo(conn)
+        user_id = open_demo(conn, request.state.sample_through)
         token = start_session(conn, user_id)
     response = RedirectResponse("/", status_code=303)
     response.set_cookie(DEMO_COOKIE, token, httponly=True, samesite="lax",

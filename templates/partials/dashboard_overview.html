@@ -1,7 +1,7 @@
 {% macro overview(dash, calendar, equity_svg, preview=false, account_filter='', range_key='all') -%}
 <div class="journal-overview" data-overview>
   <div class="overview-stats">
-    <article class="overview-stat"><span>Net P&amp;L</span><strong class="{{ 'positive' if dash.net_pnl >= 0 else 'negative' }}" data-net-pnl="{{ dash.net_pnl }}">{{ dash.net_pnl | money }}</strong><small>{{ dash.closed_count }} closed trades{% if not preview %} · Selected range{% endif %}</small></article>
+    <article class="overview-stat"><span>Net P&amp;L</span><strong class="{{ 'positive' if dash.net_pnl >= 0 else 'negative' }}" data-net-pnl="{{ dash.net_pnl }}">{{ dash.net_pnl | money }}</strong><small>{{ dash.closed_count }} closed trades · {{ 'All trades' if range_key == 'all' else 'Selected range' }}</small></article>
     <article class="overview-stat"><span>Trade win rate</span><strong>{{ dash.win_rate | pct }}</strong><small>{{ dash.wins }} wins · {{ dash.losses }} losses{% if dash.closed_count - dash.wins - dash.losses %} · {{ dash.closed_count - dash.wins - dash.losses }} breakeven{% endif %}</small></article>
     <article class="overview-stat"><span>Profit factor</span><strong>{% if not dash.closed_count %}—{% elif dash.profit_factor is none %}No losses{% else %}{{ dash.profit_factor | factor }}{% endif %}</strong><small>Gross wins ÷ gross losses</small></article>
   </div>

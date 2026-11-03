@@ -3,6 +3,7 @@ import hashlib
 import re
 import tempfile
 import unittest
+from datetime import date, datetime
 from unittest.mock import patch
 
 os.environ["OMENSITE_DATA"] = tempfile.mkdtemp(prefix="omensite-journal-")
@@ -236,19 +237,67 @@ class AppTests(unittest.TestCase):
         self.assertIsNone(self.client.cookies.get("omensite_session"))
 
     def test_homepage_and_demo_use_the_same_calculated_sample(self):
+        from app.sample_data import sample_through, sample_trades
+
         self.client.cookies.clear()
-        home = self.client.get("/home")
-        demo = self.client.get("/demo")
+        through = sample_through()
+        with patch("app.main.sample_through", return_value=through):
+            home = self.client.get("/home")
+            demo = self.client.get("/demo")
         for attribute in ("data-net-pnl", "data-month-pnl"):
             pattern = attribute + r'="([^"]+)"'
             self.assertEqual(re.findall(pattern, home.text), re.findall(pattern, demo.text))
         pattern = r'data-date="([^"]+)" data-pnl="([^"]+)" data-trades="([^"]+)"'
         home_days = re.findall(pattern, home.text)
         self.assertEqual(home_days, re.findall(pattern, demo.text))
-        self.assertGreaterEqual(len({count for _, _, count in home_days if count != "0"}), 4)
         self.assertGreaterEqual(sum(count == "0" for _, _, count in home_days), 2)
         net = float(re.search(r'data-net-pnl="([^"]+)"', demo.text).group(1))
-        self.assertAlmostEqual(sum(float(pnl) for _, pnl, _ in home_days), net, places=2)
+        month_net = float(re.search(r'data-month-pnl="([^"]+)"', demo.text).group(1))
+        self.assertAlmostEqual(sum(float(pnl) for _, pnl, _ in home_days), month_net, places=2)
+        self.assertAlmostEqual(sum(trade["net_pnl"] for trade in sample_trades(through)), net, places=2)
+        prop_equity = re.search(r'Account equity</small><strong>([^<]+)', home.text).group(1)
+        self.assertIn(f"Equity {prop_equity} · Today", demo.text)
+
+        for month, count, pnl in (("2026-07", 7, 1993.50), ("2026-08", 35, -2995.00),
+                                  ("2026-09", 12, 83.50), ("2026-10", 51, 7758.00)):
+            with self.subTest(month=month):
+                response = self.client.get("/", params={"month": month})
+                days = re.findall(pattern, response.text)
+                self.assertEqual(sum(int(n) for _, _, n in days), count)
+                self.assertAlmostEqual(sum(float(value) for _, value, _ in days), pnl, places=2)
+                self.assertTrue(any(date.fromisoformat(day).weekday() < 5 and n == "0" for day, _, n in days))
+                self.assertTrue(all(date.fromisoformat(day).weekday() < 5 for day, _, n in days if n != "0"))
+
+    def test_demo_updates_an_existing_session_without_replacing_trade_ids(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_NOTE, NY, sample_through
+
+        def trade_ids(note):
+            with db.session() as conn:
+                user = db.user_by_email(conn, DEMO_EMAIL)
+                return {row["id"] for row in db.trades(conn, user["id"]) if row["notes"] == note}
+
+        before = sample_through(datetime(2026, 11, 3, 12, 59, tzinfo=NY))
+        after = sample_through(datetime(2026, 11, 3, 13, 0, tzinfo=NY))
+        self.assertEqual(before, date(2026, 11, 2))
+        self.assertEqual(after, date(2026, 11, 3))
+        with tempfile.TemporaryDirectory() as data, patch.dict(os.environ, {"OMENSITE_DATA": data}), TestClient(app) as demo:
+            with patch("app.main.sample_through", return_value=before):
+                self.assertEqual(demo.get("/demo").status_code, 200)
+                legacy_note = "Omensite demo v3 2026-10"
+                with db.session() as conn:
+                    conn.execute("UPDATE trades SET notes = ? WHERE notes = ?", (legacy_note, DEMO_NOTE))
+                self.assertTrue(trade_ids(legacy_note))
+                self.assertEqual(demo.get("/").status_code, 200)
+                self.assertEqual(trade_ids(legacy_note), set())
+                previous_ids = trade_ids(DEMO_NOTE)
+                self.assertTrue(previous_ids)
+            with patch("app.main.sample_through", return_value=after):
+                self.assertEqual(demo.get("/trades").status_code, 200)
+                new_ids = trade_ids(DEMO_NOTE)
+                self.assertTrue(previous_ids < new_ids)
+                self.assertEqual(demo.get("/demo").status_code, 200)
+                self.assertEqual(trade_ids(DEMO_NOTE), new_ids)
 
     def test_discord_sign_in_paths(self):
         from app import db
