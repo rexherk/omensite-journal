@@ -24,6 +24,24 @@ def _trade(trade_id, session, pnl, r_multiple, tag_setup, plan=1):
 
 
 class AnalyticsTests(unittest.TestCase):
+    def test_streaks_use_daily_net_and_skip_days_off(self):
+        trades = []
+        for index, (day, pnl) in enumerate(((1, 50), (1, -25), (2, 45), (5, 80),
+                                            (5, -90), (6, -50), (7, 10), (7, -10), (8, 100)), start=1):
+            trade = _trade(index, "NY AM", pnl, None, "")
+            trade["closed_at"] = f"2026-10-{day:02d}T12:00:00"
+            trades.append(trade)
+        for count, wins, losses, current, kind in (
+            (3, 2, 0, 2, "win"),
+            (5, 2, 1, 1, "loss"),
+            (6, 2, 2, 2, "loss"),
+            (8, 2, 2, 0, None),
+            (9, 2, 2, 1, "win"),
+        ):
+            with self.subTest(trades=count):
+                self.assertEqual(dashboard(trades[:count], {})["streak"],
+                                 {"win": wins, "loss": losses, "current": current, "kind": kind})
+
     def test_ny_am_fvg_sentence(self):
         trades = []
         tags = {}

@@ -211,7 +211,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(demo.status_code, 200)
         self.assertIn("Demo workspace", demo.text)
         self.assertIn("Sample data", demo.text)
-        self.assertIn("TopstepX 50K account", demo.text)
+        self.assertIn("Topstep 50k Combine", demo.text)
         self.assertEqual(self.client.cookies.get("omensite_session"), self.session)
         self.assertTrue(self.client.cookies.get("omensite_demo"))
         token = csrf_from(demo.text)
@@ -271,7 +271,9 @@ class AppTests(unittest.TestCase):
     def test_topstep_demo_challenge_migrates_and_passes(self):
         from collections import defaultdict
         from app import db
-        from app.sample_data import CHALLENGE_END, DEMO_EMAIL, DEMO_NOTE, DEMO_PROP, LEGACY_DEMO_PROP
+        from app.sample_data import (
+            CHALLENGE_END, DEMO_EMAIL, DEMO_NOTE, DEMO_PROP, FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP,
+        )
 
         self.client.get("/demo").raise_for_status()
         with db.session() as conn:
@@ -286,7 +288,7 @@ class AppTests(unittest.TestCase):
         # The completed account stays visible even with a range that excludes its fills.
         demo = self.client.get("/", params={"range": "mtd", "account": account_id})
         self.assertEqual(demo.status_code, 200)
-        self.assertIn("TopstepX 50K account", demo.text)
+        self.assertIn("Topstep 50k Combine", demo.text)
         self.assertRegex(demo.text, r"Simulated Trading Combine · Account \d+XXXX · Passed Oct 13, 2026")
         self.assertIn("$53,135.00", demo.text)
 
@@ -311,6 +313,17 @@ class AppTests(unittest.TestCase):
                 self.assertLess(balance, DEMO_PROP["profit_target"])
         self.assertEqual(balance, 3135)
         self.assertLessEqual(max(map(sum, by_day.values())) / balance, DEMO_PROP["consistency_pct"] / 100)
+        previous_name = FORMER_DEMO_PROP_NAMES[1]
+        with db.session() as conn:
+            conn.execute("UPDATE accounts SET name = ? WHERE user_id = ? AND id = ?",
+                         (previous_name, user_id, account_id))
+        renamed = self.client.get("/")
+        self.assertIn("Topstep 50k Combine", renamed.text)
+        self.assertNotIn(previous_name, renamed.text)
+        with db.session() as conn:
+            self.assertEqual(db.account(conn, user_id, account_id)["name"], "Topstep 50k Combine")
+            self.assertEqual({row["id"]: row["account_id"] for row in db.trades(conn, user_id)},
+                             {row["id"]: row["account_id"] for row in rows})
 
     def test_demo_updates_an_existing_session_without_replacing_trade_ids(self):
         from app import db

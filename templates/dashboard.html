@@ -66,8 +66,10 @@
   <div class="stat"><span>Max drawdown</span><strong>{% if dash.closed_count %}{{ dash.max_drawdown | money }}{% else %}—{% endif %}</strong></div>
   <div class="stat"><span>Rule-break P&amp;L</span><strong>{% if dash.closed_count %}{{ dash.rule_break_pnl | money }}{% else %}—{% endif %}</strong></div>
   <div class="stat"><span>Left on table</span><strong>{% if dash.closed_count %}{{ dash.left_on_table | money }}{% else %}—{% endif %}</strong></div>
-  <div class="stat"><span>Current streak</span><strong class="count" {% if dash.streak.kind %}data-count="{{ dash.streak.current }}" data-kind="int" data-suffix=" {{ dash.streak.kind }}"{% endif %}>{% if dash.streak.kind %}{{ dash.streak.current }} {{ dash.streak.kind }}{% else %}—{% endif %}</strong></div>
-  <div class="stat"><span>Best / worst streak</span><strong>{% if dash.closed_count %}{{ dash.streak.win }} / {{ dash.streak.loss }}{% else %}—{% endif %}</strong></div>
+  {% set streak = dash.streak %}
+  <div class="stat"><span>Current streak</span><strong>{% if streak.kind %}{{ streak.current }} {{ 'winning' if streak.kind == 'win' else 'losing' }} day{{ 's' if streak.current != 1 }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Best winning streak</span><strong>{% if streak.win %}{{ streak.win }} winning day{{ 's' if streak.win != 1 }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Longest losing streak</span><strong>{% if streak.loss %}{{ streak.loss }} losing day{{ 's' if streak.loss != 1 }}{% else %}—{% endif %}</strong></div>
 </section>
 </section>
 <section class="panel">

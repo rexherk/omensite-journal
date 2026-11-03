@@ -40,7 +40,7 @@ from app.paths import import_dir, upload_path
 from app.present import equity_svg
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_NOTE, DEMO_PROP,
-    LEGACY_DEMO_PROP, demo_challenge, sample_trades,
+    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, sample_trades,
 )
 from app.services_error import JournalError
 from app import db
@@ -791,8 +791,8 @@ def complete_reset(conn, token: str, password: str) -> None:
 
 def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
     return (db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through))
-            or db.one(conn, "SELECT id FROM accounts WHERE user_id = ? AND name = ?",
-                      (user_id, LEGACY_DEMO_PROP)) is not None)
+            or db.one(conn, "SELECT id FROM accounts WHERE user_id = ? AND name IN (?, ?)",
+                      (user_id, *FORMER_DEMO_PROP_NAMES)) is not None)
 
 
 def open_demo(conn, through: date) -> int:
@@ -812,7 +812,7 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
     records = sample_trades(through)
     existing = db.sample_count(conn, user_id, DEMO_NOTE)
     accounts = db.accounts(conn, user_id)
-    legacy = next((row for row in accounts if row["name"] == LEGACY_DEMO_PROP), None)
+    legacy = next((row for row in accounts if row["name"] in FORMER_DEMO_PROP_NAMES), None)
     if existing >= len(records) and legacy is None:
         return
     if not existing:
@@ -835,7 +835,7 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
         )
     if legacy is not None or not existing:
         db.set_consistency(conn, user_id, prop_id, DEMO_PROP["consistency_pct"])
-    if legacy is not None:
+    if legacy is not None and legacy["name"] == LEGACY_DEMO_PROP:
         # Reclassify the sample fills in place so their IDs and P&L stay stable.
         conn.execute(
             """UPDATE trades
@@ -942,7 +942,8 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         raw = [
             trade
             for trade in raw
-            if ((trade.get("closed_at") or trade.get("opened_at") or "")[:10] >= stamp)
+            if (trade.get("closed_local") or trade.get("closed_at")
+                or trade.get("opened_local") or trade.get("opened_at") or "")[:10] >= stamp
         ]
     tags = db.tags_for_user(conn, user["id"])
     mistakes = db.mistakes_for_user(conn, user["id"])

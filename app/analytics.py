@@ -52,12 +52,17 @@ def dashboard(trades: list[dict], tags_by_trade: dict[int, list[str]]) -> dict:
     }
 
 
-def month_calendar(trades: list[dict], month: date) -> dict:
-    """Dated cells and totals, calculated from closed trades only."""
+def _closed_by_day(trades: list[dict]) -> dict[str, list[dict]]:
     buckets = defaultdict(list)
     for trade in trades:
         if trade["is_closed"] and trade.get("closed_at"):
             buckets[trade["closed_at"][:10]].append(trade)
+    return buckets
+
+
+def month_calendar(trades: list[dict], month: date) -> dict:
+    """Dated cells and totals, calculated from closed trades only."""
+    buckets = _closed_by_day(trades)
     days = []
     total = count = 0
     for week in calendar.Calendar(firstweekday=6).monthdatescalendar(month.year, month.month):
@@ -165,10 +170,12 @@ def _equity(trades: list[dict]) -> dict:
 
 
 def _streaks(trades: list[dict]) -> dict:
+    """Count daily results in date order, skipping days without closed trades."""
     best_win = best_loss = current = 0
     current_kind = None
-    for trade in trades:
-        pnl = trade["net_pnl"] or 0
+    days = _closed_by_day(trades)
+    for day in sorted(days):
+        pnl = round(sum(trade["net_pnl"] or 0 for trade in days[day]), 2)
         if pnl == 0:
             current = 0
             current_kind = None
