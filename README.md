@@ -48,7 +48,7 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - Topstep CSV import (the only currently supported broker), plus manual fill entry
 - Chart slots for higher-timeframe context, entry, and after the exit, with markup
 - ICT tags, a checklist that grades A+ / A / B / C, and a short review on each trade
-- White and lime branding across public pages and the journal, with shared dashboard and calendar components
+- Orange, teal, and lime branding across public pages and the journal, with shared dashboard and calendar components
 - A read-only demo and homepage preview backed by the same sample trades, with matching P&L totals and days off
 - Dashboard, monthly P&L calendar, plain-language notes, rule-break cost, and profit left on the table
 - Prop-account limits: daily loss, trailing drawdown, and target progress

@@ -1,7 +1,7 @@
 /* Shared by the actual journal and its public product preview. */
-.journal-overview{container-type:inline-size;--overview-line:#e0e6da;--overview-muted:#707a68;--accent:#739b36;--down:#b96066;--chart-grid:#e5eadd;color:#24331d;font-family:var(--oj-font);margin-bottom:24px}
+.journal-overview{container-type:inline-size;--overview-line:var(--oj-line);--overview-muted:var(--oj-muted);--accent:var(--oj-secondary);--down:var(--oj-loss);--chart-grid:var(--oj-line);color:var(--oj-ink);font-family:var(--oj-font);margin-bottom:24px}
 .journal-overview *{box-sizing:border-box}
-.journal-overview .positive{color:#567b2d!important}.journal-overview .negative{color:#ac5360!important}
+.journal-overview .positive{color:var(--oj-secondary)!important}.journal-overview .negative{color:var(--oj-loss)!important}
 .overview-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:23px}
 .overview-stat{border:1px solid var(--overview-line);border-radius:7px;background:#fff;padding:17px 18px;min-width:0}
 .overview-stat>span{display:block;color:var(--overview-muted);font-size:clamp(7px,1.45cqw,12px);font-weight:400}
@@ -9,26 +9,26 @@
 .overview-stat>small{display:block;color:var(--overview-muted);font-size:clamp(5px,1.15cqw,10px);line-height:1.6}
 .overview-performance{border:1px solid var(--overview-line);border-radius:9px;background:#fff;padding:21px}
 .overview-viewbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.overview-viewbar>h2{font:500 clamp(8px,1.7cqw,14px) var(--oj-font);letter-spacing:0;margin:0;color:#485a3b}
+.overview-viewbar>h2{font:500 clamp(8px,1.7cqw,14px) var(--oj-font);letter-spacing:0;margin:0;color:var(--oj-ink)}
 .overview-tabs{display:flex;gap:3px;padding:3px;border:1px solid var(--overview-line);border-radius:5px;background:#fff}
-.overview-tabs button{border:0;border-radius:3px;padding:7px 12px;min-height:0;background:#fff;color:#78816e;font:400 clamp(6px,1.25cqw,11px) var(--oj-font);box-shadow:none;cursor:pointer}
-.overview-tabs button[aria-pressed=true]{background:var(--oj-lime);color:#2d411a}
-.overview-tabs button:focus-visible{outline:2px solid #658a37;outline-offset:2px}
+.overview-tabs button{border:0;border-radius:3px;padding:7px 12px;min-height:0;background:#fff;color:var(--oj-muted);font:400 clamp(6px,1.25cqw,11px) var(--oj-font);box-shadow:none;cursor:pointer}
+.overview-tabs button[aria-pressed=true]{background:var(--oj-accent);color:var(--oj-secondary)}
+.overview-tabs button:focus-visible{outline:2px solid var(--oj-primary);outline-offset:2px}
 .overview-calendar-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:21px 0 15px;font-size:clamp(6px,1.3cqw,12px);color:var(--overview-muted)}
 .overview-calendar-bar strong{font-weight:500}.overview-calendar-bar b{font-weight:500;margin-left:5px}
 .overview-month{display:flex;align-items:center;gap:13px}
-.overview-month a{font-size:16px;line-height:1;color:#5a763e;text-decoration:none;padding:2px 5px}
+.overview-month a{font-size:16px;line-height:1;color:var(--oj-secondary);text-decoration:none;padding:2px 5px}
 .overview-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.overview-weekday{text-align:center;font-size:clamp(6px,1.2cqw,10px);color:#7c886e;padding:7px 0;border:1px solid #eef1e9;border-radius:3px}
-.overview-day{min-width:0;position:relative;height:clamp(43px,10.5cqw,88px);background:#fff;border:1px solid #e6eadf;border-radius:4px;padding:6px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end}
-.overview-date{position:absolute;top:5px;left:6px;color:#7a886c;font-size:clamp(5px,1.15cqw,9px);line-height:1}
+.overview-weekday{text-align:center;font-size:clamp(6px,1.2cqw,10px);color:var(--oj-muted);padding:7px 0;border:1px solid var(--oj-line);border-radius:3px}
+.overview-day{min-width:0;position:relative;height:clamp(43px,10.5cqw,88px);background:#fff;border:1px solid var(--oj-line);border-radius:4px;padding:6px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end}
+.overview-date{position:absolute;top:5px;left:6px;color:var(--oj-muted);font-size:clamp(5px,1.15cqw,9px);line-height:1}
 .overview-day>strong{font:500 clamp(6px,1.55cqw,13px)/1.25 var(--oj-heading);letter-spacing:-.025em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .overview-day>small{font:400 clamp(5px,1cqw,9px)/1.35 var(--oj-font)}
-.overview-day.day-win{background:#eaf5d8;border-color:#d5e8bb;color:#597735}
-.overview-day.day-loss{background:#fbecee;border-color:#efd8dc;color:#a75c66}
-.overview-day.day-flat{background:#f7f8f5;color:#66765b}
+.overview-day.day-win{background:var(--oj-secondary-soft);border-color:#cce3db;color:var(--oj-secondary)}
+.overview-day.day-loss{background:var(--oj-loss-soft);border-color:#efd8dc;color:var(--oj-loss)}
+.overview-day.day-flat{background:#f6f8f7;color:var(--oj-muted)}
 .overview-day.day-off,.overview-day.outside-month{background:#fff}
-.overview-day.outside-month{border-color:#f0f2ec}
+.overview-day.outside-month{border-color:#eef2f0}
 .overview-calendar-note{font-size:clamp(5px,1.15cqw,10px);color:var(--overview-muted);margin:13px 0 0;line-height:1.6}
 .overview-equity{padding:25px 0;min-height:200px;display:grid;align-items:center}
 .overview-equity>svg{display:block;width:100%;height:auto}
