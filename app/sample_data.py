@@ -12,6 +12,7 @@ from app.present import equity_svg
 
 DEMO_EMAIL = "demo@omensite.journal"
 DEMO_NOTE = "Omensite demo v4"
+DEMO_FUNDED_NAME = "Topstep 50k Funded"
 LEGACY_DEMO_PROP = "Sample Prop"
 FORMER_DEMO_PROP_NAMES = (LEGACY_DEMO_PROP, "TopstepX 50K account")
 CHALLENGE_START = date(2026, 10, 1)

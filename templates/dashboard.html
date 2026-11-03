@@ -44,12 +44,17 @@
 
 {% if dash.closed_count == 0 and dash.open_count == 0 %}
 <section class="panel empty-hero">
+  {% if demo_mode %}
+  <h2>No trades to show</h2>
+  <p>No trades match the selected account and date range.</p>
+  {% else %}
   <h2>The desk is clear</h2>
   <p>Log a fill, import a CSV, or load the sample journal from Settings. Comparisons appear once three trades are closed.</p>
   <div class="actions">
     <a class="button" href="/trades/new">Log a trade</a>
     <a class="button ghost" href="/settings">Load sample journal</a>
   </div>
+  {% endif %}
 </section>
 {% elif dash.closed_count == 0 %}
 <section class="panel"><p>{{ dash.open_count }} open {{ "trade" if dash.open_count == 1 else "trades" }}. Closed stats appear when a position is flat.</p></section>
@@ -100,6 +105,8 @@
         <div class="stat"><span>Net P&amp;L · {{ row.account.profit_target | money }} target</span><strong class="up">{{ row.total_pnl | money }}</strong></div>
         <div class="stat"><span>Best day share · {{ row.consistency_pct | plain }}% limit</span><strong>{{ row.best_share | pct }}</strong></div>
       </div>
+      {% elif row.funded_placeholder %}
+      <p class="muted">No trades recorded.</p>
       {% else %}
       {% if row.account.daily_loss_limit %}
       {% set used = (-row.today_pnl / row.account.daily_loss_limit) if row.today_pnl < 0 else 0 %}

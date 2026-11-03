@@ -278,7 +278,7 @@ class AppTests(unittest.TestCase):
         self.client.get("/demo").raise_for_status()
         with db.session() as conn:
             user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
-            account_id = next(row["id"] for row in db.accounts(conn, user_id) if row["kind"] == "prop")
+            account_id = next(row["id"] for row in db.accounts(conn, user_id) if row["name"] == DEMO_PROP["name"])
             existing_ids = {row["id"] for row in db.trades(conn, user_id)}
             conn.execute("UPDATE accounts SET name = ?, profit_target = 6000 WHERE id = ?",
                          (LEGACY_DEMO_PROP, account_id))
@@ -355,6 +355,34 @@ class AppTests(unittest.TestCase):
                 self.assertTrue(previous_ids < new_ids)
                 self.assertEqual(demo.get("/demo").status_code, 200)
                 self.assertEqual(trade_ids(DEMO_NOTE), new_ids)
+
+    def test_demo_funded_account_has_an_empty_calendar(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_FUNDED_NAME
+
+        self.client.get("/demo").raise_for_status()
+        with db.session() as conn:
+            user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+            funded = next(row for row in db.accounts(conn, user_id) if row["name"] == DEMO_FUNDED_NAME)
+            db.delete_account(conn, user_id, funded["id"])
+            trade_ids = {row["id"] for row in db.trades(conn, user_id)}
+
+        # An existing demo session acquires the option without reseeding its fills.
+        dashboard = self.client.get("/")
+        link = re.search(r'href="(/\?account=(\d+)&range=all)">Topstep 50k Funded</a>', dashboard.text)
+        self.assertIsNotNone(link)
+        calendar = self.client.get(link[1] + "&month=2026-10")
+        days = re.findall(r'data-date="[^"]+" data-pnl="([^"]+)" data-trades="([^"]+)"', calendar.text)
+        self.assertEqual(len(days), 31)
+        self.assertTrue(all(float(pnl) == 0 and count == "0" for pnl, count in days))
+        self.assertIn("No trades to show", calendar.text)
+        self.client.get("/demo").raise_for_status()
+        with db.session() as conn:
+            funded = [row for row in db.accounts(conn, user_id) if row["name"] == DEMO_FUNDED_NAME]
+            self.assertEqual([row["id"] for row in funded], [int(link[2])])
+            trades = db.trades(conn, user_id)
+            self.assertEqual({row["id"] for row in trades}, trade_ids)
+            self.assertTrue(all(row["account_id"] != funded[0]["id"] for row in trades))
 
     def test_downloads_disable_shared_caching(self):
         for path in ("/export/trades", "/export/backup", "/export.csv", "/export.json"):
