@@ -343,6 +343,15 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(demo.get("/demo").status_code, 200)
                 self.assertEqual(trade_ids(DEMO_NOTE), new_ids)
 
+    def test_downloads_disable_shared_caching(self):
+        for path in ("/export/trades", "/export/backup", "/export.csv", "/export.json"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.headers["Cache-Control"], "private, no-store")
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get("/export/trades", follow_redirects=False).status_code, 303)
+
     def test_discord_sign_in_paths(self):
         from app import db
         from app.services import login_discord, start_session

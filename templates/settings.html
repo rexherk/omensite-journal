@@ -79,7 +79,7 @@
 
 <section class="panel">
   <h2>Export and backup</h2>
-  <p><a href="/export.csv">Download CSV</a> · <a href="/export.json">Download full backup</a> · <a href="/report">Print or save as PDF</a></p>
+  <p><a href="/export/trades">Download CSV</a> · <a href="/export/backup">Download full backup</a> · <a href="/report">Print or save as PDF</a></p>
   <form method="post" action="/settings/restore" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <label>Restore a backup<input type="file" name="backup" accept="application/json,.json" required></label>

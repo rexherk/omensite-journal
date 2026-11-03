@@ -1029,6 +1029,7 @@ async def settings_sample(request: Request):
 
 
 @app.get("/export.csv")
+@app.get("/export/trades")
 def export_csv(request: Request):
     user = current(request)
     with db.session() as conn:
@@ -1036,11 +1037,13 @@ def export_csv(request: Request):
     return Response(
         content=text,
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": "attachment; filename=omensite-journal.csv"},
+        headers={"Content-Disposition": "attachment; filename=omensite-journal.csv",
+                 "Cache-Control": "private, no-store"},
     )
 
 
 @app.get("/export.json")
+@app.get("/export/backup")
 def export_json(request: Request):
     user = current(request)
     with db.session() as conn:
@@ -1048,7 +1051,8 @@ def export_json(request: Request):
     return Response(
         content=json.dumps(payload, indent=2),
         media_type="application/json",
-        headers={"Content-Disposition": "attachment; filename=omensite-journal-backup.json"},
+        headers={"Content-Disposition": "attachment; filename=omensite-journal-backup.json",
+                 "Cache-Control": "private, no-store"},
     )
 
 
