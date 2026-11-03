@@ -1,56 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="31" fill="#003B2D" stroke="#779986" stroke-width="1.4"/>
-  <g fill="#F6EFDC" fill-opacity=".64">
-    <circle cx="59.7" cy="35.8" r="0.68"/>
-    <circle cx="58" cy="32.9" r="0.46"/>
-    <circle cx="60.9" cy="33.7" r="0.46"/>
-    <circle cx="55.9" cy="44.6" r="0.46"/>
-    <circle cx="50.9" cy="54.1" r="0.68"/>
-    <circle cx="47.8" cy="54.3" r="0.46"/>
-    <circle cx="43" cy="56.5" r="0.46"/>
-    <circle cx="32.6" cy="60.7" r="0.46"/>
-    <circle cx="34.8" cy="58" r="0.68"/>
-    <circle cx="39.6" cy="58.4" r="0.46"/>
-    <circle cx="26.1" cy="60.6" r="0.46"/>
-    <circle cx="18.9" cy="57.2" r="0.46"/>
-    <circle cx="22.6" cy="58.4" r="0.68"/>
-    <circle cx="15.6" cy="52.8" r="0.46"/>
-    <circle cx="11.1" cy="48.2" r="0.46"/>
-    <circle cx="5.2" cy="38.8" r="0.46"/>
-    <circle cx="5.3" cy="32.7" r="0.68"/>
-    <circle cx="8" cy="43.5" r="0.46"/>
-    <circle cx="6.1" cy="35.1" r="0.46"/>
-    <circle cx="6.3" cy="18.9" r="0.46"/>
-    <circle cx="6.7" cy="21.3" r="0.68"/>
-    <circle cx="6.4" cy="26.6" r="0.46"/>
-    <circle cx="12.1" cy="14.8" r="0.46"/>
-    <circle cx="16.2" cy="10.2" r="0.46"/>
-    <circle cx="30.1" cy="3.3" r="0.68"/>
-    <circle cx="22.1" cy="5.2" r="0.46"/>
-    <circle cx="24.4" cy="6.9" r="0.46"/>
-    <circle cx="19.1" cy="8.2" r="0.46"/>
-    <circle cx="43.4" cy="5.1" r="0.68"/>
-    <circle cx="43.5" cy="8.5" r="0.46"/>
-    <circle cx="49.6" cy="11.4" r="0.46"/>
-    <circle cx="56.8" cy="16.8" r="0.46"/>
-    <circle cx="46.9" cy="9.5" r="0.68"/>
-    <circle cx="59.1" cy="23.9" r="0.46"/>
-    <circle cx="59" cy="21.6" r="0.46"/>
-    <circle cx="60.2" cy="29.6" r="0.46"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="152 152 720 720">
+  <rect x="152" y="152" width="720" height="720" rx="114" fill="#015D47"/>
+
+  <!-- Crescent and its interior cuts -->
+  <path fill="#FD550A" d="M600 208C431 158 250 268 207 429c-45 169 55 343 224 388 184 48 372-77 401-282-34 106-122 174-227 174-139 0-252-113-252-252 0-134 113-245 247-249Z"/>
+  <path fill="#015D47" d="M293 375c-64 101-43 208 12 286l15-22c-53-79-65-170-27-264Zm60 341c125 98 302 73 405-39-117 98-254 106-388 18Z"/>
+
+  <!-- Upright price candles, including two cut out of the moon -->
+  <path fill="#015D47" d="M232 538h7v35h13v113h-31V573h11Zm90-63h7v49h13v135h-31V524h11Z"/>
+  <path fill="#E0F354" d="M400 420h7v35h12v78l-30 31V455h11Zm47-70h7v45h12v83l-30 31V395h11Zm55-29h7v25h12v42l-31-17v-25h12Zm46-76h7v39h12v59l-30 54V284h11Zm129-26h7v46h11v60l-21 23-9-13v-70h12Z"/>
+
+  <!-- Eye rays, almond, and iris -->
+  <g fill="#E0F354">
+    <path d="m708 408 63-45-25 61 71 55-96-49 28-42-29 27Zm-191 160 24 9-22 49 45-29 38 15 25 62 25-71 47-16 67 25-31-51-20 12 21 25-40-28-59 22-10 56-16-50-53-18-25 20Z"/>
+    <path fill-rule="evenodd" d="M469 520c56-45 112-76 157-101 65 12 129 47 182 102-53 45-116 73-181 83-64-10-118-42-158-84Zm38 1c37 31 78 53 120 61 48-7 95-28 140-61-44-37-91-63-139-73-42 18-82 42-121 73Z"/>
+    <path fill-rule="evenodd" d="M704 491a78 78 0 1 1-156 0 78 78 0 1 1 156 0Zm-20 0a58 58 0 1 0-116 0 58 58 0 1 0 116 0Z"/>
+    <path d="M625 455a38 38 0 1 0 39 37c0-6-2-12-5-17a23 23 0 0 1-38-19Z"/>
+    <circle cx="645" cy="467" r="11"/>
   </g>
-  <circle cx="32" cy="32" r="25" fill="#FD550A"/>
-  <g fill="#A53004" fill-opacity=".2" transform="translate(-11.2 -11.2) scale(1.35)">
-    <ellipse cx="24" cy="24" rx="4.6" ry="2.8" transform="rotate(-23 24 24)"/>
-    <ellipse cx="35.7" cy="20" rx="2.2" ry="1.5"/>
-    <ellipse cx="19.7" cy="34" rx="1.6" ry="2.1" transform="rotate(12 19.7 34)"/>
-    <ellipse cx="39.6" cy="34.5" rx="4.2" ry="2.7" transform="rotate(-20 39.6 34.5)"/>
-    <ellipse cx="36.8" cy="45.6" rx="2.7" ry="1.4" transform="rotate(18 36.8 45.6)"/>
-  </g>
-  <path id="wicks" d="M22.5 30.5V34 M22.5 42.5V45.5 M32 24.5V28 M32 38.5V46.5 M41.5 36.5V40.5"
-        fill="none" stroke="#015D47" stroke-width="1.2"/>
-  <g fill="#E0F354" stroke="#015D47" stroke-width="1.1">
-    <rect x="19.6" y="34" width="5.8" height="8.5" rx=".8"/>
-    <rect x="28.8" y="28" width="6.4" height="10.5" rx=".8"/>
-    <rect x="38.1" y="21.5" width="6.8" height="15" rx=".8"/>
-  </g>
+
+  <!-- The rising zigzag and foreground arrow -->
+  <path fill="#E0F354" d="m477 382 56 30 25-13 62-123 43 87-15 16-27-54-40 86-46 27-39-27 24 34-23 19Z"/>
+  <path fill="#E0F354" stroke="#015D47" stroke-width="18" stroke-linejoin="round" paint-order="stroke fill"
+        d="m193 827 131-197 34 51 111-126 151-114 137-169-23-16 78-28-16 80-19-20-130 171-148 104-145 162-29-47Z"/>
 </svg>
