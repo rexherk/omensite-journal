@@ -30,6 +30,5 @@
 .oj-brand>.lockup{display:block;font:700 24px/.9 var(--oj-heading);letter-spacing:-1px;color:inherit}
 .oj-brand .gradient-text{background:none;color:inherit;-webkit-text-fill-color:currentColor}
 .oj-brand small{display:block;font:8px/1 var(--oj-mono);letter-spacing:4.6px;margin-top:7px;color:var(--oj-muted);text-transform:uppercase}
-.oj-mark{display:block;background:var(--oj-primary);border-radius:50%;width:39px;height:39px;padding:2px;flex-shrink:0}
-.oj-mark path{fill:var(--oj-on-primary)}.oj-mark path[stroke]{stroke:var(--oj-on-primary);fill:none}.oj-mark rect[fill=white]{fill:var(--oj-on-primary)}
+.oj-mark{display:block;width:39px;height:39px;flex-shrink:0}
 @media(max-width:680px){.oj-brand>.lockup{font-size:22px}.oj-mark{width:34px;height:34px}}
