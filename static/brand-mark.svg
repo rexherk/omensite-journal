@@ -4,58 +4,60 @@
   </defs>
   <circle cx="32" cy="32" r="31" fill="#003B2D" stroke="#779986" stroke-width="1.4"/>
   <g fill="#F6EFDC" fill-opacity=".64">
-    <circle cx="52.9" cy="36.8" r="0.82"/>
-    <circle cx="8.8" cy="45.1" r="0.54"/>
-    <circle cx="41" cy="4.3" r="0.54"/>
-    <circle cx="41.9" cy="53.8" r="0.54"/>
-    <circle cx="5.5" cy="20.7" r="0.82"/>
-    <circle cx="53.3" cy="24.5" r="0.54"/>
-    <circle cx="19.1" cy="56.2" r="0.54"/>
-    <circle cx="26.7" cy="11.3" r="0.54"/>
-    <circle cx="54.4" cy="46.6" r="0.82"/>
-    <circle cx="3.3" cy="36.8" r="0.54"/>
-    <circle cx="46.8" cy="13.1" r="0.54"/>
-    <circle cx="34.2" cy="60.7" r="0.54"/>
-    <circle cx="15.5" cy="16.6" r="0.82"/>
-    <circle cx="59.4" cy="32.3" r="0.54"/>
-    <circle cx="16.1" cy="46.3" r="0.54"/>
-    <circle cx="34.6" cy="5.4" r="0.54"/>
-    <circle cx="49.5" cy="55.3" r="0.82"/>
-    <circle cx="8.4" cy="27.6" r="0.54"/>
-    <circle cx="56.5" cy="16.8" r="0.54"/>
-    <circle cx="25.9" cy="53.8" r="0.54"/>
-    <circle cx="19.6" cy="7.6" r="0.82"/>
-    <circle cx="52" cy="39.6" r="0.54"/>
-    <circle cx="7.2" cy="41.9" r="0.54"/>
-    <circle cx="44.6" cy="5.8" r="0.54"/>
-    <circle cx="38.9" cy="55" r="0.82"/>
-    <circle cx="7.2" cy="17.3" r="0.54"/>
-    <circle cx="54.1" cy="27.4" r="0.54"/>
-    <circle cx="16" cy="54.2" r="0.54"/>
-    <circle cx="29.5" cy="10.7" r="0.82"/>
-    <circle cx="52.2" cy="49.4" r="0.54"/>
-    <circle cx="2.9" cy="32.9" r="0.54"/>
-    <circle cx="49.2" cy="15.3" r="0.54"/>
-    <circle cx="30.4" cy="60.8" r="0.82"/>
-    <circle cx="17.7" cy="14.5" r="0.54"/>
-    <circle cx="59.1" cy="35.9" r="0.54"/>
-    <circle cx="14.3" cy="44" r="0.54"/>
+    <circle cx="60.1" cy="38.5" r="0.68"/>
+    <circle cx="7.1" cy="46.1" r="0.46"/>
+    <circle cx="41.1" cy="4.1" r="0.46"/>
+    <circle cx="43.9" cy="58.3" r="0.46"/>
+    <circle cx="5" cy="20.5" r="0.68"/>
+    <circle cx="59.1" cy="22.5" r="0.46"/>
+    <circle cx="18.2" cy="57.8" r="0.46"/>
+    <circle cx="24.7" cy="3.3" r="0.46"/>
+    <circle cx="56.3" cy="47.9" r="0.68"/>
+    <circle cx="3.1" cy="36.8" r="0.46"/>
+    <circle cx="49.8" cy="9.2" r="0.46"/>
+    <circle cx="34.3" cy="61.5" r="0.46"/>
+    <circle cx="10.9" cy="12.3" r="0.68"/>
+    <circle cx="61.2" cy="32.3" r="0.46"/>
+    <circle cx="10" cy="51.8" r="0.46"/>
+    <circle cx="34.8" cy="3.5" r="0.46"/>
+    <circle cx="49.6" cy="55.5" r="0.68"/>
+    <circle cx="3.6" cy="26.7" r="0.46"/>
+    <circle cx="57.1" cy="16.4" r="0.46"/>
+    <circle cx="24.3" cy="59.7" r="0.46"/>
+    <circle cx="18.8" cy="6.1" r="0.68"/>
+    <circle cx="59.7" cy="42.5" r="0.46"/>
+    <circle cx="5.4" cy="42.6" r="0.46"/>
+    <circle cx="44.7" cy="5.5" r="0.46"/>
+    <circle cx="40.3" cy="59.6" r="0.68"/>
+    <circle cx="6.6" cy="16.9" r="0.46"/>
+    <circle cx="60.1" cy="26.1" r="0.46"/>
+    <circle cx="14.9" cy="55.7" r="0.46"/>
+    <circle cx="28.6" cy="2.9" r="0.68"/>
+    <circle cx="53.7" cy="50.7" r="0.46"/>
+    <circle cx="2.7" cy="32.9" r="0.46"/>
+    <circle cx="52.7" cy="11.9" r="0.46"/>
+    <circle cx="30.4" cy="61" r="0.68"/>
+    <circle cx="13.8" cy="9.7" r="0.46"/>
+    <circle cx="61" cy="36.2" r="0.46"/>
+    <circle cx="7.5" cy="48.6" r="0.46"/>
   </g>
-  <circle cx="32" cy="32" r="18.5" fill="#FD550A"/>
-  <g fill="#A53004" fill-opacity=".2">
+  <circle cx="32" cy="32" r="27.75" fill="#FD550A"/>
+  <g fill="#A53004" fill-opacity=".2" transform="translate(-16 -16) scale(1.5)">
     <ellipse cx="24" cy="24" rx="4.6" ry="2.8" transform="rotate(-23 24 24)"/>
     <ellipse cx="35.7" cy="20" rx="2.2" ry="1.5"/>
     <ellipse cx="19.7" cy="34" rx="1.6" ry="2.1" transform="rotate(12 19.7 34)"/>
     <ellipse cx="39.6" cy="34.5" rx="4.2" ry="2.7" transform="rotate(-20 39.6 34.5)"/>
     <ellipse cx="36.8" cy="45.6" rx="2.7" ry="1.4" transform="rotate(18 36.8 45.6)"/>
   </g>
-  <g fill="none" stroke-linecap="round">
-    <use href="#wicks" stroke="#015D47" stroke-width="2.1"/>
-    <use href="#wicks" stroke="#E0F354" stroke-width="1.15"/>
-  </g>
-  <g fill="#E0F354" stroke="#015D47" stroke-width="1.1">
-    <rect x="19.6" y="34" width="5.8" height="8.5" rx=".8"/>
-    <rect x="28.8" y="28" width="6.4" height="10.5" rx=".8"/>
-    <rect x="38.1" y="21.5" width="6.8" height="15" rx=".8"/>
+  <g transform="translate(8 8) scale(.75)">
+    <g fill="none" stroke-linecap="round">
+      <use href="#wicks" stroke="#015D47" stroke-width="1.8"/>
+      <use href="#wicks" stroke="#E0F354" stroke-width="1"/>
+    </g>
+    <g fill="#E0F354" stroke="#015D47" stroke-width="1.1">
+      <rect x="19.6" y="34" width="5.8" height="8.5" rx=".8"/>
+      <rect x="28.8" y="28" width="6.4" height="10.5" rx=".8"/>
+      <rect x="38.1" y="21.5" width="6.8" height="15" rx=".8"/>
+    </g>
   </g>
 </svg>
