@@ -211,7 +211,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(demo.status_code, 200)
         self.assertIn("Demo workspace", demo.text)
         self.assertIn("Sample data", demo.text)
-        self.assertIn("Sample Prop", demo.text)
+        self.assertIn("TopstepX 50K account", demo.text)
         self.assertEqual(self.client.cookies.get("omensite_session"), self.session)
         self.assertTrue(self.client.cookies.get("omensite_demo"))
         token = csrf_from(demo.text)
@@ -256,7 +256,7 @@ class AppTests(unittest.TestCase):
         self.assertAlmostEqual(sum(float(pnl) for _, pnl, _ in home_days), month_net, places=2)
         self.assertAlmostEqual(sum(trade["net_pnl"] for trade in sample_trades(through)), net, places=2)
         prop_equity = re.search(r'Account equity</small><strong>([^<]+)', home.text).group(1)
-        self.assertIn(f"Equity {prop_equity} · Today", demo.text)
+        self.assertIn(f"Final balance</span><strong>{prop_equity}</strong>", demo.text)
 
         for month, count, pnl in (("2026-07", 7, 1993.50), ("2026-08", 35, -2995.00),
                                   ("2026-09", 12, 83.50), ("2026-10", 51, 7758.00)):
@@ -267,6 +267,50 @@ class AppTests(unittest.TestCase):
                 self.assertAlmostEqual(sum(float(value) for _, value, _ in days), pnl, places=2)
                 self.assertTrue(any(date.fromisoformat(day).weekday() < 5 and n == "0" for day, _, n in days))
                 self.assertTrue(all(date.fromisoformat(day).weekday() < 5 for day, _, n in days if n != "0"))
+
+    def test_topstep_demo_challenge_migrates_and_passes(self):
+        from collections import defaultdict
+        from app import db
+        from app.sample_data import CHALLENGE_END, DEMO_EMAIL, DEMO_NOTE, DEMO_PROP, LEGACY_DEMO_PROP
+
+        self.client.get("/demo").raise_for_status()
+        with db.session() as conn:
+            user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+            account_id = next(row["id"] for row in db.accounts(conn, user_id) if row["kind"] == "prop")
+            existing_ids = {row["id"] for row in db.trades(conn, user_id)}
+            conn.execute("UPDATE accounts SET name = ?, profit_target = 6000 WHERE id = ?",
+                         (LEGACY_DEMO_PROP, account_id))
+            conn.execute("UPDATE trades SET account_id = ? WHERE user_id = ? AND notes = ?",
+                         (account_id, user_id, DEMO_NOTE))
+
+        # The completed account stays visible even with a range that excludes its fills.
+        demo = self.client.get("/", params={"range": "mtd", "account": account_id})
+        self.assertEqual(demo.status_code, 200)
+        self.assertIn("TopstepX 50K account", demo.text)
+        self.assertRegex(demo.text, r"Simulated Trading Combine · Account \d+XXXX · Passed Oct 13, 2026")
+        self.assertIn("$53,135.00", demo.text)
+
+        with db.session() as conn:
+            rows = db.trades(conn, user_id)
+            self.assertEqual({row["id"] for row in rows}, existing_ids)
+            self.assertEqual(db.account(conn, user_id, account_id)["consistency_pct"], 55)
+        challenge = [row for row in rows if row["account_id"] == account_id]
+        self.assertEqual(len(challenge), 20)
+        by_day = defaultdict(list)
+        for row in sorted(challenge, key=lambda row: row["closed_local"]):
+            by_day[row["closed_local"][:10]].append(row["net_pnl"])
+        self.assertEqual(max(by_day), CHALLENGE_END.isoformat())
+        balance = 0
+        floor = -DEMO_PROP["trailing_drawdown"]
+        for day, amounts in sorted(by_day.items()):
+            for pnl in amounts:
+                balance += pnl
+                self.assertGreater(balance, floor)
+            floor = min(0, max(floor, balance - DEMO_PROP["trailing_drawdown"]))
+            if day < CHALLENGE_END.isoformat():
+                self.assertLess(balance, DEMO_PROP["profit_target"])
+        self.assertEqual(balance, 3135)
+        self.assertLessEqual(max(map(sum, by_day.values())) / balance, DEMO_PROP["consistency_pct"] / 100)
 
     def test_demo_updates_an_existing_session_without_replacing_trade_ids(self):
         from app import db

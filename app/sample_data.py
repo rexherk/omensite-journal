@@ -12,13 +12,17 @@ from app.present import equity_svg
 
 DEMO_EMAIL = "demo@omensite.journal"
 DEMO_NOTE = "Omensite demo v4"
+LEGACY_DEMO_PROP = "Sample Prop"
+CHALLENGE_START = date(2026, 10, 1)
+CHALLENGE_END = date(2026, 10, 13)
 DEMO_PROP = {
-    "name": "Sample Prop",
+    "name": "TopstepX 50K account",
     "kind": "prop",
     "starting_balance": 50000,
     "daily_loss_limit": 1000,
     "trailing_drawdown": 2000,
-    "profit_target": 6000,
+    "profit_target": 3000,
+    "consistency_pct": 55,
 }
 START = date(2026, 7, 1)
 ROLLING_START = date(2026, 11, 1)
@@ -105,7 +109,7 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
             net = gross - 4.5
             records.append({
                 "id": index + 1, "instrument": instrument, "qty": qty,
-                "is_prop": index % 3 != 0,
+                "is_prop": CHALLENGE_START <= day <= CHALLENGE_END,
                 "direction": direction, "entry": entry, "exit": exit_price,
                 "fees": 4.5, "is_closed": 1, "net_pnl": net,
                 "opened_at": stamp, "closed_at": (datetime.fromisoformat(stamp) + timedelta(minutes=18 + index % 29)).isoformat(),
@@ -118,6 +122,14 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
     return tuple(records)
 
 
+def demo_challenge(row: dict) -> dict:
+    """Label the fixed, completed sample challenge in both demo views."""
+    passed = (row["total_pnl"] >= DEMO_PROP["profit_target"]
+              and row["best_share"] is not None
+              and row["best_share"] <= DEMO_PROP["consistency_pct"] / 100)
+    return {"account_number": "892849XXXX", "passed_on": CHALLENGE_END if passed else None}
+
+
 def sample_overview(through: date | None = None) -> dict:
     through = through or sample_through()
     trades = sample_trades(through)
@@ -128,5 +140,6 @@ def sample_overview(through: date | None = None) -> dict:
                    and trade["direction"] == "long" and trade["net_pnl"] > 0), None)
     prop = prop_rows([dict(DEMO_PROP, id=1)], [dict(trade, account_id=1) for trade in trades if trade["is_prop"]],
                      datetime.now(NY).date())[0]
+    prop["challenge"] = demo_challenge(prop)
     return {"dash": board, "calendar": month_calendar(trades, month),
             "equity_svg": equity_svg(board["equity"]), "trades": recent, "review": review, "prop": prop}

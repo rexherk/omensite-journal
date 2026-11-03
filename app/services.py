@@ -38,7 +38,10 @@ from app.instruments import future_root, parse_symbol, spec_for
 from app.news_data import CAVEAT
 from app.paths import import_dir, upload_path
 from app.present import equity_svg
-from app.sample_data import DEMO_EMAIL, DEMO_NOTE, DEMO_PROP, sample_trades
+from app.sample_data import (
+    CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_NOTE, DEMO_PROP,
+    LEGACY_DEMO_PROP, demo_challenge, sample_trades,
+)
 from app.services_error import JournalError
 from app import db
 
@@ -786,6 +789,12 @@ def complete_reset(conn, token: str, password: str) -> None:
     db.delete_reset(conn, token)
 
 
+def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
+    return (db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through))
+            or db.one(conn, "SELECT id FROM accounts WHERE user_id = ? AND name = ?",
+                      (user_id, LEGACY_DEMO_PROP)) is not None)
+
+
 def open_demo(conn, through: date) -> int:
     db.lock_demo_seed(conn)
     user = db.user_by_email(conn, DEMO_EMAIL)
@@ -799,22 +808,41 @@ def open_demo(conn, through: date) -> int:
 
 def _load_demo_sample(conn, user: dict, through: date) -> None:
     """Migrate the old sample once, then append new sessions under the seed lock."""
+    user_id = user["id"]
     records = sample_trades(through)
-    existing = db.sample_count(conn, user["id"], DEMO_NOTE)
-    if existing >= len(records):
+    existing = db.sample_count(conn, user_id, DEMO_NOTE)
+    accounts = db.accounts(conn, user_id)
+    legacy = next((row for row in accounts if row["name"] == LEGACY_DEMO_PROP), None)
+    if existing >= len(records) and legacy is None:
         return
     if not existing:
         for trade in db.trades(conn, user["id"]):
             note = trade["notes"] or ""
             if note == SAMPLE_NOTE or note.startswith(("Omensite demo v2 ", "Omensite demo v3 ")):
                 db.delete_trade(conn, user["id"], trade["id"])
-    accounts = db.accounts(conn, user["id"])
     personal_id = next(row["id"] for row in accounts if row["kind"] == "personal")
     prop_id = next((row["id"] for row in accounts if row["name"] == DEMO_PROP["name"]), None)
+    if legacy is not None and prop_id is None:
+        prop_id = legacy["id"]
+        conn.execute(
+            "UPDATE accounts SET name = ?, profit_target = ? WHERE user_id = ? AND id = ?",
+            (DEMO_PROP["name"], DEMO_PROP["profit_target"], user_id, prop_id),
+        )
     if prop_id is None:
         prop_id = db.insert_account(
             conn, user["id"], DEMO_PROP["name"], DEMO_PROP["kind"], DEMO_PROP["starting_balance"],
             DEMO_PROP["daily_loss_limit"], DEMO_PROP["trailing_drawdown"], DEMO_PROP["profit_target"],
+        )
+    if legacy is not None or not existing:
+        db.set_consistency(conn, user_id, prop_id, DEMO_PROP["consistency_pct"])
+    if legacy is not None:
+        # Reclassify the sample fills in place so their IDs and P&L stay stable.
+        conn.execute(
+            """UPDATE trades
+               SET account_id = CASE WHEN closed_local >= ? AND closed_local < ? THEN ? ELSE ? END
+               WHERE user_id = ? AND notes = ?""",
+            (CHALLENGE_START.isoformat(), (CHALLENGE_END + timedelta(days=1)).isoformat(),
+             prop_id, personal_id, user_id, DEMO_NOTE),
         )
     checks = [{"item_id": item["id"], "checked": 1} for item in db.checklist(conn, user["id"]) if item["active"]]
     for record in records[existing:]:
@@ -897,7 +925,8 @@ def _optional_number(form, key: str, fallback):
 
 def dashboard_context(conn, user: dict, account_id: int | None = None, range_key: str = "all", month_key: str = "") -> dict:
     zone = user_zone(user)
-    raw = db.trades(conn, user["id"])
+    all_trades = db.trades(conn, user["id"])
+    raw = all_trades
     if account_id is not None:
         raw = [trade for trade in raw if trade["account_id"] == account_id]
     today = datetime.now(zone).date()
@@ -941,11 +970,19 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         item["mistakes"] = mistakes.get(item["id"], [])
         recent.append(item)
     accounts = db.accounts(conn, user["id"])
+    if user["email"] == DEMO_EMAIL:
+        prop_accounts = [account for account in accounts if account_id in (None, account["id"])]
+        props = prop_rows(prop_accounts, _math_rows(all_trades, {}), today)
+        for row in props:
+            if row["account"]["name"] == DEMO_PROP["name"]:
+                row["challenge"] = demo_challenge(row)
+    else:
+        props = prop_rows(accounts, math, today)
     return {
         "dash": board,
         "calendar": month_calendar(math, selected_month),
         "sections": sections,
-        "props": prop_rows(accounts, math, datetime.now(zone).date()),
+        "props": props,
         "recent": recent,
         "equity_svg": equity_svg(board["equity"]),
         "zone_name": str(zone),

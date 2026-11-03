@@ -39,7 +39,7 @@ from app.catalog import (
 )
 from app.firms import FIRMS
 from app.public_pages import PUBLIC_PAGES, PRODUCT_PAGES, SOLUTION_PAGES, RESOURCE_PAGES
-from app.sample_data import DEMO_EMAIL, DEMO_NOTE, sample_overview, sample_through, sample_trades
+from app.sample_data import DEMO_EMAIL, sample_overview, sample_through
 from app.instruments import FUTURES
 from app.present import factor, hold, money, pct, plain, rmult
 from app.services import (
@@ -54,6 +54,7 @@ from app.services import (
     create_account_for,
     dashboard_context,
     decorate_trades,
+    demo_needs_refresh,
     disable_checklist_item,
     discard_preview,
     draft_from_form,
@@ -178,9 +179,7 @@ async def attach_user(request: Request, call_next):
                 request.state.demo_mode = row["email"] == DEMO_EMAIL
                 if (request.state.demo_mode and request.method == "GET"
                         and request.url.path not in {"/demo", "/demo/exit"}):
-                    refresh_demo = db.sample_count(conn, row["id"], DEMO_NOTE) < len(
-                        sample_trades(request.state.sample_through)
-                    )
+                    refresh_demo = demo_needs_refresh(conn, row["id"], request.state.sample_through)
             if not request.state.csrf:
                 anon = request.cookies.get(ANON)
                 if not anon:

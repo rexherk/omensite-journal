@@ -54,14 +54,13 @@
 {% set account = row.account %}
 <div class="art-window prop-art">
   <div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Prop account overview</strong><small>Sample account</small></div>
-  <div class="prop-name"><span>{{ icon('case') }}</span><div><h4>{{ account.name }}</h4><p>{{ account.starting_balance | money }} starting balance</p></div><b>{{ 'Limit reached' if row.daily_hit or row.trail_hit else 'Within limits' }}</b></div>
+  <div class="prop-name"><span>{{ icon('case') }}</span><div><h4>{{ account.name }}</h4><p>Trading Combine · {{ row.challenge.account_number }}</p></div><b>{{ 'Passed' if row.challenge.passed_on else 'In progress' }}</b></div>
   <div class="prop-balance"><small>Account equity</small><strong>{{ row.equity | money }}</strong><span class="{{ 'positive' if row.total_pnl >= 0 else 'negative' }}">{{ '+' if row.total_pnl > 0 else '' }}{{ row.total_pnl | money }}</span></div>
   {% for name, used, limit in [
     ('Profit target', row.total_pnl, account.profit_target),
-    ('Daily loss used', [0, -row.today_pnl] | max, account.daily_loss_limit),
-    ('Trailing drawdown', row.drawdown, account.trailing_drawdown)
+    ('Best day share', (row.best_share or 0) * 100, account.consistency_pct)
   ] %}
-  <div class="prop-progress"><div><span>{{ name }}</span><b>{{ used | money }} / {{ limit | money }}</b></div><div class="progress-track"><span style="width:{{ [100, [0, 100 * used / limit] | max] | min }}%"></span></div></div>
+  <div class="prop-progress"><div><span>{{ name }}</span><b>{% if loop.first %}{{ used | money }} / {{ limit | money }}{% else %}{{ (used / 100) | pct }} / {{ limit | plain }}%{% endif %}</b></div><div class="progress-track"><span style="width:{{ [100, [0, 100 * used / limit] | max] | min }}%"></span></div></div>
   {% endfor %}
 </div>
 {%- endmacro %}

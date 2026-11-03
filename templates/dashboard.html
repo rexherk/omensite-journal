@@ -80,12 +80,25 @@
   <p class="muted">Comparisons appear once three trades are closed.</p>
   {% endif %}
 </section>
-<section class="panel">
+<section class="panel" id="prop-accounts">
   <h2>Prop accounts</h2>
   {% if props %}
     {% for row in props %}
     <article class="prop-card">
-      <h3>{{ row.account.name }}</h3>
+      <div class="panel-label">
+        <h3>{{ row.account.name }}</h3>
+        {% if row.challenge and row.challenge.passed_on %}<span class="pill-tag good">Passed</span>{% endif %}
+      </div>
+      {% if row.challenge %}
+      <p class="muted">Simulated Trading Combine · Account {{ row.challenge.account_number }}{% if row.challenge.passed_on %} · Passed {{ row.challenge.passed_on.strftime('%b %d, %Y') }}{% endif %}</p>
+      {% endif %}
+      {% if row.challenge and row.challenge.passed_on %}
+      <div class="stats challenge-stats">
+        <div class="stat"><span>Final balance</span><strong>{{ row.equity | money }}</strong></div>
+        <div class="stat"><span>Net P&amp;L · {{ row.account.profit_target | money }} target</span><strong class="up">{{ row.total_pnl | money }}</strong></div>
+        <div class="stat"><span>Best day share · {{ row.consistency_pct | plain }}% limit</span><strong>{{ row.best_share | pct }}</strong></div>
+      </div>
+      {% else %}
       {% if row.account.daily_loss_limit %}
       {% set used = (-row.today_pnl / row.account.daily_loss_limit) if row.today_pnl < 0 else 0 %}
       <p>Daily loss limit</p>
@@ -107,6 +120,7 @@
       <p>Profit target progress {{ row.target_ratio | pct }}</p>
       {% if row.daily_hit %}<p class="down">Daily loss limit is hit.</p>{% endif %}
       {% if row.trail_hit %}<p class="down">Trailing drawdown is hit.</p>{% endif %}
+      {% endif %}
     </article>
     {% endfor %}
   {% else %}
