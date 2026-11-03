@@ -8,16 +8,16 @@
   <meta name="description" content="A private trading journal for logging fills, reviewing performance, tracking emotions, and spotting patterns.">
   <meta name="csrf" content="{{ csrf }}">
   <title>{% block title %}Omensite Journal{% endblock %}</title>
-  <link rel="icon" href="/static/brand-mark.svg?v=palette-2" type="image/svg+xml">
+  <link rel="icon" href="/static/brand-mark.svg?v=palette-3" type="image/svg+xml">
   <script>
     try {
       if (localStorage.getItem("omensite_sidebar") === "compact") document.documentElement.classList.add("compact");
     } catch (e) {}
   </script>
   <link rel="stylesheet" href="/static/css/app.css?v=20">
-  <link rel="stylesheet" href="/static/css/brand.css?v=palette-2">
-  <link rel="stylesheet" href="/static/css/journal-brand.css?v=palette-2">
-  <link rel="stylesheet" href="/static/css/overview.css?v=palette-2">
+  <link rel="stylesheet" href="/static/css/brand.css?v=palette-3">
+  <link rel="stylesheet" href="/static/css/journal-brand.css?v=palette-3">
+  <link rel="stylesheet" href="/static/css/overview.css?v=palette-3">
   {% block extra_head %}{% endblock %}
 </head>
 <body data-demo="{{ 'true' if demo_mode else 'false' }}" class="{% if user %}shell{% endif %} {% if demo_mode %}demo-mode{% endif %} {% block body_class %}{% endblock %}">

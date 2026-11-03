@@ -29,12 +29,12 @@ h1,h2,h3{font-family:var(--oj-heading);letter-spacing:-.035em}
 .stats .stat>strong{font-family:var(--oj-heading)}
 .footer-note{font-size:10px;font-family:var(--oj-mono);color:var(--ink-faint)}
 .shell .top{height:var(--header-height);min-height:var(--header-height);flex-wrap:nowrap}
-.demo-banner{position:sticky;top:var(--header-height);z-index:31;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 25px;background:var(--oj-secondary);border-bottom:1px solid var(--oj-secondary);color:var(--oj-paper)}
+.demo-banner{position:sticky;top:var(--header-height);z-index:31;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 25px;background:var(--oj-deep-green);border-bottom:1px solid var(--oj-deep-green);color:var(--oj-paper)}
 .demo-banner strong{font:600 13px var(--oj-heading)}
 .demo-banner p{font-size:10px;line-height:1.6;color:var(--oj-paper);margin:4px 0 0}
 .demo-banner-actions{display:flex;align-items:center;gap:15px;flex-shrink:0}
-.demo-banner a{color:var(--oj-accent);font-size:11px;font-weight:500}
-.demo-banner a.demo-signup{padding:10px 15px;background:var(--oj-accent);color:var(--oj-secondary);border-radius:5px}
+.demo-banner a{color:var(--oj-paper);font-size:11px;font-weight:500}
+.demo-banner a.demo-signup{padding:10px 15px;background:var(--oj-accent);color:var(--oj-deep-green);border-radius:5px}
 .demo-mode form[data-demo-readonly]{opacity:.75}
 .demo-mode button:disabled{cursor:not-allowed}
 .demo-mode .fab{background:var(--oj-accent);color:var(--oj-secondary);border-color:var(--oj-accent)}
@@ -50,7 +50,7 @@ body,body.shell,.shell .top,.sidebar{background:var(--oj-paper)}
 .shell .top{border-bottom:1px solid var(--line)}
 .button:not(.ghost):not(.google):not(.discord),button:not(.ghost):not(.icon-btn):not(.palette-trigger):not([data-overview-view]):not(.detail-tabs button):not(.step-nav button),.fab{background:var(--oj-primary);border-color:var(--oj-primary);color:var(--oj-on-primary)}
 button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,.tabbar,.chart-pane,.trade-read,.ticket-body{background:#fff;color:var(--text);border-color:var(--line)}
-.side-nav a.on{background:var(--oj-accent);color:var(--oj-secondary);box-shadow:inset 2px 0 var(--oj-primary)}
+.side-nav a.on{background:var(--oj-secondary-soft);color:var(--oj-deep-green);box-shadow:inset 3px 0 var(--oj-accent)}
 .side-nav a{font-size:12px;padding:10px 9px}
 .side-nav .group>span{font-size:8px;color:var(--oj-muted)}
 .sidebar .oj-brand>.lockup{font-size:23px}

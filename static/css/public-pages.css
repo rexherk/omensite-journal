@@ -1,7 +1,7 @@
 .nav-dropdown{display:flex;align-items:center;gap:1px}
 .nav-dropdown>.nav-parent{padding:25px 0;font-size:inherit;white-space:nowrap}
 .nav-dropdown>button{padding:20px 0 20px 4px}
-.nav-dropdown>.nav-parent:hover,.main-navigation [aria-current=page]{color:var(--oj-accent)}
+.nav-dropdown>.nav-parent:hover,.main-navigation [aria-current=page]{color:var(--oj-deep-green)}
 .nav-dropdown>.dropdown-panel{top:60px}
 .main-navigation>a.nav-start{color:var(--oj-on-primary)}
 .public-hero{background:#10190f;color:#eff5e7;border-bottom:1px solid #374b2b}
@@ -46,7 +46,7 @@
 .public-note-link{align-items:center;max-width:600px;font-size:14px;color:var(--oj-secondary)}
 .public-note-link>.icon:last-child{margin-left:auto}
 .broker-support-card{display:flex;align-items:center;gap:25px;padding:40px;border:1px solid #ccdab8;background:#edf4df;border-radius:12px}
-.topstep-emblem{display:grid;place-items:center;width:85px;height:85px;flex-shrink:0;border-radius:12px;background:var(--oj-secondary);color:var(--oj-accent);font:600 27px var(--oj-heading)}
+.topstep-emblem{display:grid;place-items:center;width:85px;height:85px;flex-shrink:0;border-radius:12px;background:var(--oj-secondary);color:var(--oj-paper);font:600 27px var(--oj-heading)}
 .broker-support-card .eyebrow{margin-bottom:10px;font-size:8px}
 .broker-support-card h2{font-size:45px;margin-bottom:10px}
 .broker-support-card p{font-size:13px;color:var(--oj-muted)}
@@ -54,7 +54,7 @@
 .support-status .icon{width:15px;height:15px}
 .broker-detail{font-size:12px;color:var(--oj-muted)}
 .topstep-broker{font-size:17px;color:var(--oj-secondary);font-weight:600}
-.topstep-broker i{filter:none;background:var(--oj-secondary);color:var(--oj-accent);opacity:1;width:32px;height:32px;font-size:10px}
+.topstep-broker i{filter:none;background:var(--oj-secondary);color:var(--oj-paper);opacity:1;width:32px;height:32px;font-size:10px}
 .public-endcap{display:flex;justify-content:space-between;align-items:center;gap:30px;background:#e4efce;border:1px solid #c7dba9;border-radius:10px;padding:40px;margin-top:65px}
 .public-endcap .eyebrow{font-size:8px;margin-bottom:14px}
 .public-endcap h2{font-size:38px;margin-bottom:15px}

@@ -6,7 +6,7 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .main-navigation>a.nav-start:hover{color:var(--oj-on-primary)}
 .mobile-toggle span{background:var(--oj-secondary)}
 .hero {
-  /* A deeper orange keeps lime display text legible at large sizes. */
+  /* A deeper orange supports contrast for the two display text colors. */
   background: #ec4c05;
   color: var(--oj-on-primary);
 }
@@ -31,28 +31,28 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
   right: -26%;
 }
 .hero-glow::after {
-  background: var(--oj-secondary);
+  background: var(--oj-deep-green);
   width: 118%;
   height: 66%;
   right: -14%;
   bottom: -18%;
 }
 .hero h1 {
-  color: var(--oj-accent);
+  color: var(--oj-surface);
   font-size: clamp(2.25rem, 5.05vw, 5.8rem);
   font-weight: 900;
   letter-spacing: -.055em;
   line-height: .94;
   text-transform: uppercase;
 }
-.hero h1 > span{color:inherit}
+.hero h1 > span{color:var(--oj-deep-green)}
 .gradient-text{color:var(--oj-secondary)}
 .hero-eyebrow,.hero-eyebrow b,.hero-tools>p,.hero-visual::before,
 .hero-description,.hero-description strong,.trust-note>span,.trust-note b,.trust-note .icon{color:var(--oj-on-primary)}
 .hero-eyebrow b{border-color:currentColor}
 .hero-eyebrow>span{background:var(--oj-accent)}
-.hero .dark-button{background:var(--oj-accent);color:var(--oj-secondary);border-radius:999px}
-.hero .dark-button:hover{background:var(--oj-accent-soft);color:var(--oj-secondary)}
+.hero .dark-button{background:var(--oj-accent);color:var(--oj-deep-green);border-radius:999px}
+.hero .dark-button:hover{background:var(--oj-accent-soft);color:var(--oj-deep-green)}
 .tool-chips a{background:var(--oj-paper);border-color:var(--oj-paper);color:var(--oj-secondary)}
 .tool-chips a:hover{background:var(--oj-accent);border-color:var(--oj-accent);color:var(--oj-secondary)}
 .preview-dashboard{background:var(--oj-surface);border-color:var(--oj-secondary);box-shadow:0 20px 45px #152e2740}
@@ -73,9 +73,9 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .insight-answer strong{color:var(--oj-secondary)}.insight-answer p,.insight-answer small{color:var(--oj-muted)}
 .floating-activity>div+div{border-color:var(--oj-line)}.activity-icon{background:var(--oj-secondary-soft);color:var(--oj-secondary)}.floating-activity b{color:var(--oj-ink)}.floating-activity small,.floating-activity em{color:var(--oj-muted)}
 .floating-score>span{background:var(--oj-accent)}.floating-score small,.floating-score em{color:var(--oj-muted)}
-.proof-strip{background:var(--oj-accent);border-block:1px solid #015d4726}
+.proof-strip{background:var(--oj-paper);border-block:1px solid #015d4726}
 .proof-strip>div,.proof-strip>div:nth-child(-n+2){border-color:#015d4726}
-.proof-strip strong,.proof-strip span{color:var(--oj-secondary)}
+.proof-strip strong,.proof-strip span{color:var(--oj-deep-green)}
 .product-panel,.art-window,.art-toolbar,.sample-table th,.art-notification,.plan-note,.setup-metrics,.public-card,.auth-form-card,.public-note,.broker-support-card,.public-endcap,.discord-only-note{background:var(--oj-surface);border-color:var(--border)}
 .public-detail-art{background:none}
 .product-tabs button[aria-selected=true]{background:var(--lime);border-color:var(--oj-accent);color:var(--oj-secondary)}
@@ -92,19 +92,24 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .routine-cta,.privacy-note,.footer-bottom{border-color:var(--border)}
 .privacy-note h3{color:var(--oj-secondary);font-size:clamp(21px,2.6vw,31px);letter-spacing:-.035em}.privacy-note p{color:var(--oj-muted)}
 .access-section,.site-footer,.public-hero {
-  background: var(--oj-secondary);
+  background: var(--oj-deep-green);
   color: var(--oj-paper);
-  border-color: var(--oj-secondary);
+  border-color: var(--oj-deep-green);
 }
-.access-section h2,.access-section .gradient-text,.public-hero h1{color:var(--oj-accent)}
+.public-hero{background:var(--oj-secondary);border-color:var(--oj-secondary)}
+.access-section h2,.access-section .gradient-text,.public-hero h1{color:var(--oj-surface)}
 .access-section .eyebrow,.access-section>p:not(.eyebrow),.access-section>small,
 .public-breadcrumb,.public-hero .eyebrow,.public-lead{color:var(--oj-paper)}
-.access-section .gradient-button,.public-hero .gradient-button{background:var(--oj-accent);color:var(--oj-secondary)}
+.access-section .gradient-button,.public-hero .gradient-button{background:var(--oj-accent);color:var(--oj-deep-green)}
 .access-section .gradient-button:hover,.public-hero .gradient-button:hover{background:var(--oj-accent-soft)}
 .access-section .outline-button{background:transparent;color:var(--oj-paper);border-color:var(--oj-paper)}
 .access-section .outline-button:hover{background:var(--oj-paper);color:var(--oj-secondary)}
 .step-number{background:var(--lime);color:var(--oj-secondary)}
-.footer-top h3,.footer-top>div>a:not(.oj-brand):hover,.footer-top>div>button:hover,.public-demo-link{color:var(--oj-accent)}
+.footer-top h3,.public-demo-link{color:var(--oj-surface)}
+.footer-top>div>a:not(.oj-brand):hover,.footer-top>div>button:hover,.public-demo-link:hover{
+  color:var(--oj-surface);
+  text-decoration:underline;
+}
 .footer-about>p,.footer-top>div>a:not(.oj-brand),.footer-top>div>button,
 .site-footer .oj-brand small,.footer-bottom,.footer-bottom p,.footer-about>span{color:var(--oj-paper)}
 .footer-bottom{border-color:#f6efdc50}
