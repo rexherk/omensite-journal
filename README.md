@@ -57,7 +57,7 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - A playbook for your own setups
 - CSV export, a JSON backup, and a print view (use the browser's Save as PDF)
 
-Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#560641`, warm ochre `#BB7B3E`, red-orange `#E13823`, and crimson `#C9203C`. Cream framing and white data surfaces support readable plum text. Profit indicators use plum and loss indicators use crimson, with signs and labels alongside color. Performance calendar days use separate semantic tokens for subtle green profits and subtle red losses, with white days for no trades. The transparent logo blends all five colors with gradients and preserves the original image mask in `static/brand-mark.svg`; `static/brand-mark.png` is the tightly cropped 256-pixel website export.
+Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#560641`, warm ochre `#BB7B3E`, red-orange `#E13823`, and crimson `#C9203C`. Cream framing and white data surfaces support readable plum text. Profit indicators use plum and loss indicators use crimson, with signs and labels alongside color. Performance calendar days use separate semantic tokens for subtle green profits and subtle red losses, with white days for no trades. The transparent logo uses solid ochre candles and trend arrow, matching blended crescent and eye colors, and a deep plum outline. It preserves the original image mask in `static/brand-mark.svg`; `static/brand-mark.png` is the tightly cropped 256-pixel website export.
 
 ## What is not included
 
