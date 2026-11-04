@@ -24,8 +24,8 @@
 .overview-date{position:absolute;top:5px;left:6px;color:var(--oj-muted);font-size:clamp(5px,1.15cqw,9px);line-height:1}
 .overview-day>strong{font:500 clamp(6px,1.55cqw,13px)/1.25 var(--oj-heading);letter-spacing:-.025em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .overview-day>small{font:400 clamp(5px,1cqw,9px)/1.35 var(--oj-font)}
-.overview-day.day-win{background:var(--oj-secondary-soft);border-color:var(--oj-gain-mid);color:var(--oj-secondary)}
-.overview-day.day-loss{background:var(--oj-loss-soft);border-color:var(--oj-loss-mid);color:var(--oj-loss)}
+.overview-day.day-win{background:var(--oj-calendar-gain-soft);border-color:var(--oj-calendar-gain-line);color:var(--oj-calendar-gain)}
+.overview-day.day-loss{background:var(--oj-calendar-loss-soft);border-color:var(--oj-calendar-loss-line);color:var(--oj-calendar-loss)}
 .overview-day.day-flat{background:var(--oj-surface);color:var(--oj-muted)}
 .overview-day.day-off,.overview-day.outside-month{background:#fff}
 .overview-day.outside-month{border-color:var(--oj-line)}

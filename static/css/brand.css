@@ -31,6 +31,12 @@
   --oj-gain-strong: #9c578b;
   --oj-loss-mid: #f1bcc5;
   --oj-loss-strong: #dd7d8e;
+  --oj-calendar-gain: #286848;
+  --oj-calendar-gain-soft: #edf7f0;
+  --oj-calendar-gain-line: #cfe4d6;
+  --oj-calendar-loss: var(--oj-crimson);
+  --oj-calendar-loss-soft: #fcedef;
+  --oj-calendar-loss-line: #edcbd2;
   --oj-font: Inter, 'Segoe UI', sans-serif;
   --oj-heading: 'Inter Tight', Inter, sans-serif;
   --oj-mono: Consolas, 'Courier New', monospace;

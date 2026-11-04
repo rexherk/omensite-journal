@@ -1,5 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
+    <linearGradient id="moon-palette" gradientUnits="userSpaceOnUse" x1="240" y1="200" x2="700" y2="830">
+      <stop stop-color="#AB2059"/>
+      <stop offset=".55" stop-color="#C9203C"/>
+      <stop offset="1" stop-color="#E13823"/>
+    </linearGradient>
+    <linearGradient id="candle-palette" gradientUnits="userSpaceOnUse" x1="520" y1="240" x2="430" y2="650">
+      <stop stop-color="#BB7B3E"/>
+      <stop offset=".55" stop-color="#BB7B3E"/>
+      <stop offset="1" stop-color="#E13823"/>
+    </linearGradient>
+    <linearGradient id="eye-palette" gradientUnits="userSpaceOnUse" x1="500" y1="420" x2="760" y2="650">
+      <stop stop-color="#C9203C"/>
+      <stop offset=".6" stop-color="#AB2059"/>
+      <stop offset="1" stop-color="#560641"/>
+    </linearGradient>
+    <linearGradient id="arrow-palette" gradientUnits="userSpaceOnUse" x1="240" y1="800" x2="780" y2="240">
+      <stop stop-color="#C9203C"/>
+      <stop offset=".55" stop-color="#E13823"/>
+      <stop offset="1" stop-color="#BB7B3E"/>
+    </linearGradient>
     <filter id="levels" color-interpolation-filters="sRGB">
       <feComponentTransfer>
         <feFuncR type="linear" slope="1.09" intercept="-.045"/>
@@ -22,14 +42,14 @@
   </defs>
   <g filter="url(#outline)">
     <g mask="url(#photo)">
-      <rect width="1024" height="1024" fill="#BB7B3E"/>
+      <rect width="1024" height="1024" fill="url(#candle-palette)"/>
       <!-- These regions assign color. The source photo supplies all visible edges. -->
-      <path fill="#AB2059"
+      <path fill="url(#moon-palette)"
             d="M150 150H650V216C506 205 368 321 363 445c-9 70 21 136 53 162l-56 68-31-50-67 89-23-7-87-67Z
                M445 638c60 50 119 65 160 59 119-1 195-71 229-177l16 15v326H256l8-102 61-63 28 42Z"/>
       <!-- Color fields only. The unchanged source mask defines the eye and arrows. -->
-      <path fill="#C9203C" d="M465 492 651 400 695 350 837 467V650L590 704 470 640 480 571Z"/>
-      <path fill="#E13823" d="M174 849 323 623 356 682 491 529 554 489 634 454 738 337 738 253 826 208 804 306 654 458 568 495 352 755 324 712Z"/>
+      <path fill="url(#eye-palette)" d="M465 492 651 400 695 350 837 467V650L590 704 470 640 480 571Z"/>
+      <path fill="url(#arrow-palette)" d="M174 849 323 623 356 682 491 529 554 489 634 454 738 337 738 253 826 208 804 306 654 458 568 495 352 755 324 712Z"/>
     </g>
   </g>
 </svg>
