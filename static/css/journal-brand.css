@@ -41,7 +41,7 @@ h1,h2,h3{font-family:var(--oj-heading);letter-spacing:-.035em}
     position:relative;isolation:isolate;overflow:hidden;
     flex-direction:column;align-items:flex-start;gap:20px;
     padding:24px clamp(16px,3vw,32px);border-radius:9px;
-    background:var(--oj-deep);color:var(--oj-surface);
+    background:linear-gradient(115deg,var(--oj-deep),var(--oj-primary) 65%,var(--oj-crimson));color:var(--oj-surface);
   }
   .demo-dashboard-head .kicker,.demo-dashboard-head .muted{color:var(--oj-paper)}
   .demo-dashboard-head h1{font-size:clamp(32px,3.6vw,48px)}
@@ -69,6 +69,7 @@ html.compact .sidebar .oj-brand{gap:0}
 @media(max-width:900px){.mobile-journal-brand{display:block;margin-right:auto}.mobile-journal-brand .oj-mark{width:31px;height:31px}.mobile-journal-brand .oj-brand>.lockup{font-size:21px}.mobile-journal-brand .oj-brand small{font-size:6px;letter-spacing:3.7px}.top #sidebar-toggle,.top .website-link,.palette-label{display:none}.mobile-palette-label{display:inline}.palette-trigger{flex:0 0 auto;min-width:0;padding:9px 12px;font-size:11px}.top .theme-toggle{font-size:10px;min-width:42px}}
 
 body,body.shell,.shell .top,.sidebar{background:var(--oj-paper)}
+.shell .frame.brand-orbit{--orbit-size:640px;--orbit-position:right -350px top 280px;--orbit-opacity:.09}
 .panel,.stat,.prop-card,.firm{background:var(--oj-surface)}
 .shell .top{border-bottom:1px solid var(--line)}
 .button:not(.ghost):not(.google):not(.discord),button:not(.ghost):not(.icon-btn):not(.palette-trigger):not([data-overview-view]):not(.detail-tabs button):not(.step-nav button),.fab{background:var(--oj-primary);border-color:var(--oj-primary);color:var(--oj-on-primary)}

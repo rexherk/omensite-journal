@@ -4,7 +4,7 @@
 {% block title %}{{ page.title }} · Omensite Journal{% endblock %}
 {% block content %}
 <section class="public-hero"><div class="section-width public-hero-inner"><a class="public-breadcrumb" href="/home">OMENSITE JOURNAL / {{ page.title | upper }}</a><p class="eyebrow"><i></i> YOUR EDGE, DOCUMENTED</p><h1>{{ page.headline }}</h1><p class="public-lead">{{ page.lead }}</p><div class="public-actions"><a class="gradient-button" href="/signup">Get Started {{ icon('arrow') }}</a><a class="public-demo-link" href="/demo">Explore the demo {{ icon('play') }}</a></div></div></section>
-<div class="public-content section-width">
+<div class="public-content section-width brand-orbit">
 {% if page.kind == 'products' %}
   <div class="public-section-head"><p class="eyebrow"><i></i> THE WORKSPACE</p><h2>Six tools.<br>Your whole process.</h2></div><div class="public-card-grid">{% for slug,item in products.items() %}<a class="public-card" href="/products/{{ slug }}"><span class="public-card-icon">{{ icon(item.icon) }}</span><span class="public-card-index">0{{ loop.index }}</span><h3>{{ item.title }}</h3><p>{{ item.lead }}</p><span class="text-link">Explore {{ item.title | lower }} {{ icon('arrow') }}</span></a>{% endfor %}</div>
 {% elif page.kind == 'solutions' %}

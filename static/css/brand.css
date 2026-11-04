@@ -11,6 +11,7 @@
   --oj-accent: #BB7B3E;
   --oj-red-orange: #E13823;
   --oj-crimson: #C9203C;
+  --oj-crescent-blend: linear-gradient(145deg, var(--oj-primary), var(--oj-crimson) 55%, var(--oj-red-orange));
   --oj-primary-hover: #911b4c;
   --oj-secondary-hover: #400530;
   --oj-secondary-soft: #f4eaf1;
@@ -47,4 +48,18 @@
 .oj-brand .gradient-text{background:none;color:inherit;-webkit-text-fill-color:currentColor}
 .oj-brand small{display:block;font:8px/1 var(--oj-mono);letter-spacing:4.6px;margin-top:7px;color:var(--oj-muted);text-transform:uppercase}
 .oj-mark{display:block;width:39px;height:39px;flex-shrink:0}
+.brand-orbit{position:relative;isolation:isolate}
+.brand-orbit::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  opacity:var(--orbit-opacity,.12);
+  background-image:var(--oj-crescent-blend);
+  background-size:var(--orbit-size,480px) var(--orbit-size,480px);
+  background-position:var(--orbit-position,right -180px top -120px);
+  background-repeat:no-repeat;
+  mask-image:radial-gradient(circle,#000 69.5%,transparent 70%),radial-gradient(circle at 66% 34%,#000 54%,transparent 54.5%);
+  mask-size:var(--orbit-size,480px) var(--orbit-size,480px);
+  mask-position:var(--orbit-position,right -180px top -120px);
+  mask-repeat:no-repeat;mask-composite:subtract;
+}
+@media print{.brand-orbit::before{display:none}}
 @media(max-width:680px){.oj-brand>.lockup{font-size:22px}.oj-mark{width:34px;height:34px}}

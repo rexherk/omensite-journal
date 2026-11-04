@@ -7,7 +7,7 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .mobile-toggle span{background:var(--oj-secondary)}
 .hero {
   /* Warm white text keeps the raspberry hero readable at every size. */
-  background: var(--oj-primary);
+  background: linear-gradient(115deg,var(--oj-primary) 5%,var(--oj-crimson) 72%,var(--oj-red-orange));
   color: var(--oj-on-primary);
 }
 .hero-glow {
@@ -31,7 +31,7 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
   right: -26%;
 }
 .hero-glow::after {
-  background: linear-gradient(135deg,var(--oj-red-orange) 0 24%,var(--oj-deep) 24%);
+  background: var(--oj-crescent-blend);
   width: 118%;
   height: 66%;
   right: -14%;
@@ -96,7 +96,12 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
   color: var(--oj-paper);
   border-color: var(--oj-deep);
 }
-.public-hero{background:var(--oj-secondary);border-color:var(--oj-secondary)}
+.public-hero{background:linear-gradient(115deg,var(--oj-secondary),var(--oj-primary) 70%,var(--oj-crimson));border-color:var(--oj-secondary)}
+.access-section{background:linear-gradient(115deg,var(--oj-secondary),var(--oj-primary) 55%,var(--oj-crimson) 82%,var(--oj-red-orange));border-color:var(--oj-primary)}
+.insights-section.brand-orbit{--orbit-size:520px;--orbit-position:right -185px top -195px;--orbit-opacity:.15}
+.deep-dive.brand-orbit{--orbit-size:760px;--orbit-position:left -260px top 1080px;--orbit-opacity:.09}
+.auth-page.brand-orbit{--orbit-size:480px;--orbit-position:left -80px bottom 0;--orbit-opacity:.08}
+.public-content.brand-orbit{--orbit-size:580px;--orbit-position:right -250px bottom 25px;--orbit-opacity:.1}
 .access-section h2,.access-section .gradient-text,.public-hero h1{color:var(--oj-surface)}
 .access-section .eyebrow,.access-section>p:not(.eyebrow),.access-section>small,
 .public-breadcrumb,.public-hero .eyebrow,.public-lead{color:var(--oj-paper)}
@@ -123,6 +128,10 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 dialog,.auth-dialog-inner,.guide-dialog .import-list li{background:var(--oj-surface)}
 @media(max-width:930px){.main-navigation,.dropdown-panel,.dropdown-panel.narrow{background:var(--paper);color:var(--oj-secondary)}.main-navigation>a,.nav-dropdown>.nav-parent{border-color:var(--border)}}
 @media(max-width:680px) {
+  .insights-section.brand-orbit{--orbit-size:330px;--orbit-position:right -150px top -120px;--orbit-opacity:.12}
+  .deep-dive.brand-orbit{--orbit-size:420px;--orbit-position:left -150px top 1200px;--orbit-opacity:.08}
+  .auth-page.brand-orbit{--orbit-size:360px;--orbit-position:left -210px top 180px;--orbit-opacity:.08}
+  .public-content.brand-orbit{--orbit-size:360px;--orbit-position:right -220px bottom 20px;--orbit-opacity:.08}
   .hero-glow{inset:55% 0 0}
   .hero h1{font-size:clamp(2rem,9.7vw,4.25rem)}
   .preview-brand .oj-mark{width:12px;height:12px}.preview-brand .oj-brand>.lockup{font-size:6px;letter-spacing:-.2px}.preview-brand .oj-brand small{font-size:2px;letter-spacing:1px;margin-top:2px}.preview-brand .oj-brand{gap:2px}.preview-main .overview-stat{padding:7px 4px}.preview-main .overview-stats{gap:4px}.preview-main .overview-calendar-note{font-size:4px}.preview-main .overview-day{height:42px}
