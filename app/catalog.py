@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+MARKUP_COLORS = ("#ab2059", "#560641", "#bb7b3e", "#e13823", "#c9203c")
+
 TAGS = [
     "FVG",
     "Order Block",

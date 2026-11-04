@@ -2,11 +2,11 @@
 :root,:root[data-theme=light],:root[data-theme=dark]{
   color-scheme:light;--header-height:70px;
   --bg:var(--oj-paper);--bg-subtle:var(--oj-surface);--surface:var(--oj-surface);--surface-hover:var(--oj-secondary-soft);
-  --line:var(--oj-line);--line-strong:#8caea4;--text:var(--oj-ink);--ink-muted:var(--oj-muted);--ink-faint:var(--oj-muted);
+  --line:var(--oj-line);--line-strong:var(--oj-line-strong);--text:var(--oj-ink);--ink-muted:var(--oj-muted);--ink-faint:var(--oj-muted);
   --accent:var(--oj-secondary);--accent-strong:var(--oj-secondary-hover);--on-accent:#fff;--accent-soft:var(--oj-secondary-soft);--link:var(--oj-secondary);
-  --up:var(--oj-secondary);--down:var(--oj-loss);--warn:#9a782a;--gain-fill:var(--oj-secondary);--loss-fill:#dba6ae;
-  --heat-gain-1:var(--oj-secondary-soft);--heat-gain-2:#a8d4c6;--heat-gain-3:#459880;
-  --heat-loss-1:#fbecee;--heat-loss-2:#eac8cf;--heat-loss-3:#d698a4;--heat-none:#fff;--chart-grid:var(--oj-line);
+  --up:var(--oj-secondary);--down:var(--oj-loss);--warn:var(--oj-warning);--gain-fill:var(--oj-secondary);--loss-fill:var(--oj-loss-mid);
+  --heat-gain-1:var(--oj-secondary-soft);--heat-gain-2:var(--oj-gain-mid);--heat-gain-3:var(--oj-gain-strong);
+  --heat-loss-1:var(--oj-loss-soft);--heat-loss-2:var(--oj-loss-mid);--heat-loss-3:var(--oj-loss-strong);--heat-none:#fff;--chart-grid:var(--oj-line);
   --font-sans:var(--oj-font);--font-serif:var(--oj-heading);--font-mono:var(--oj-mono);
   --focus-ring:0 0 0 2px #fff,0 0 0 4px var(--oj-primary);--shadow-raise:none;
 }
@@ -29,19 +29,19 @@ h1,h2,h3{font-family:var(--oj-heading);letter-spacing:-.035em}
 .stats .stat>strong{font-family:var(--oj-heading)}
 .footer-note{font-size:10px;font-family:var(--oj-mono);color:var(--ink-faint)}
 .shell .top{height:var(--header-height);min-height:var(--header-height);flex-wrap:nowrap}
-.demo-banner{position:sticky;top:var(--header-height);z-index:31;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 25px;background:var(--oj-deep-green);border-bottom:1px solid var(--oj-deep-green);color:var(--oj-paper)}
+.demo-banner{position:sticky;top:var(--header-height);z-index:31;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 25px;background:var(--oj-deep);border-bottom:1px solid var(--oj-deep);color:var(--oj-paper)}
 .demo-banner strong{font:600 13px var(--oj-heading)}
 .demo-banner p{font-size:10px;line-height:1.6;color:var(--oj-paper);margin:4px 0 0}
 .demo-banner-actions{display:flex;align-items:center;gap:15px;flex-shrink:0}
 .demo-banner a{color:var(--oj-paper);font-size:11px;font-weight:500}
-.demo-banner a.demo-signup{padding:10px 15px;background:var(--oj-accent);color:var(--oj-deep-green);border-radius:5px}
+.demo-banner a.demo-signup{padding:10px 15px;background:var(--oj-accent);color:var(--oj-on-accent);border-radius:5px}
 .demo-dashboard-art{display:none}
 @media screen {
   .demo-dashboard-head{
     position:relative;isolation:isolate;overflow:hidden;
     flex-direction:column;align-items:flex-start;gap:20px;
     padding:24px clamp(16px,3vw,32px);border-radius:9px;
-    background:var(--oj-deep-green);color:var(--oj-surface);
+    background:var(--oj-deep);color:var(--oj-surface);
   }
   .demo-dashboard-head .kicker,.demo-dashboard-head .muted{color:var(--oj-paper)}
   .demo-dashboard-head h1{font-size:clamp(32px,3.6vw,48px)}
@@ -60,7 +60,7 @@ h1,h2,h3{font-family:var(--oj-heading);letter-spacing:-.035em}
 }
 .demo-mode form[data-demo-readonly]{opacity:.75}
 .demo-mode button:disabled{cursor:not-allowed}
-.demo-mode .fab{background:var(--oj-accent);color:var(--oj-secondary);border-color:var(--oj-accent)}
+.demo-mode .fab{background:var(--oj-accent);color:var(--oj-on-accent);border-color:var(--oj-accent)}
 .demo-footer-link{font-size:11px;color:var(--accent);display:inline-block;margin-top:10px}
 html.compact .sidebar .oj-brand>.lockup{display:none}
 html.compact .sidebar .oj-brand{gap:0}
@@ -73,7 +73,7 @@ body,body.shell,.shell .top,.sidebar{background:var(--oj-paper)}
 .shell .top{border-bottom:1px solid var(--line)}
 .button:not(.ghost):not(.google):not(.discord),button:not(.ghost):not(.icon-btn):not(.palette-trigger):not([data-overview-view]):not(.detail-tabs button):not(.step-nav button),.fab{background:var(--oj-primary);border-color:var(--oj-primary);color:var(--oj-on-primary)}
 button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,.tabbar,.chart-pane,.trade-read,.ticket-body{background:#fff;color:var(--text);border-color:var(--line)}
-.side-nav a.on{background:var(--oj-secondary-soft);color:var(--oj-deep-green);box-shadow:inset 3px 0 var(--oj-accent)}
+.side-nav a.on{background:var(--oj-secondary-soft);color:var(--oj-deep);box-shadow:inset 3px 0 var(--oj-accent)}
 .side-nav a{font-size:12px;padding:10px 9px}
 .side-nav .group>span{font-size:8px;color:var(--oj-muted)}
 .sidebar .oj-brand>.lockup{font-size:23px}
@@ -86,6 +86,7 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
   .challenge-stats .stat>strong{font-size:18px}
 }
 @media(max-width:360px){.challenge-stats{grid-template-columns:1fr}}
-.notice{background:var(--oj-secondary-soft);border-color:var(--oj-line);color:var(--oj-secondary)}.error{background:#fff1f2;border-color:#edccd3;color:#a55262}
+@media screen and (max-width:700px){.report-page .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.report-page .stats .stat{min-width:0}.report-page .stats .stat strong{font-size:19px}}
+.notice{background:var(--oj-secondary-soft);border-color:var(--oj-line);color:var(--oj-secondary)}.error{background:var(--oj-loss-soft);border-color:var(--oj-loss-mid);color:var(--oj-loss)}
 .top .website-link{margin-left:auto}
 @media(max-width:700px){.dashboard-details .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.dashboard-details .stat{min-width:0}.page-head{flex-wrap:wrap}.page-head .actions{width:100%}.page-head .actions .button{font-size:10px;padding:10px 12px}.overview-month a{font-size:13px}.demo-banner-actions{width:100%;justify-content:space-between}.dashboard-details .stats .stat>strong{font-size:21px}}

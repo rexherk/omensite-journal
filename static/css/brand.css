@@ -5,22 +5,32 @@
 @font-face{font-family:'Inter Tight';src:url('/static/fonts/inter-tight-semibold.ttf');font-weight:500 600;font-display:swap}
 @font-face{font-family:'Inter Tight';src:url('/static/fonts/inter-tight-bold.ttf');font-weight:700 900;font-display:swap}
 :root {
-  --oj-primary: #FD550A;
-  --oj-secondary: #015D47;
-  --oj-deep-green: #003B2D;
-  --oj-accent: #E0F354;
-  --oj-primary-hover: #ff6c2d;
-  --oj-secondary-hover: #004b3a;
-  --oj-secondary-soft: #eaf6f1;
-  --oj-accent-soft: #f5fbd0;
-  --oj-on-primary: #251707;
+  --oj-primary: #AB2059;
+  --oj-secondary: #560641;
+  --oj-deep: var(--oj-secondary);
+  --oj-accent: #BB7B3E;
+  --oj-red-orange: #E13823;
+  --oj-crimson: #C9203C;
+  --oj-primary-hover: #911b4c;
+  --oj-secondary-hover: #400530;
+  --oj-secondary-soft: #f4eaf1;
+  --oj-accent-soft: #f5e7da;
+  --oj-primary-soft: #f9eaf0;
+  --oj-on-primary: #fffdf7;
+  --oj-on-accent: #321126;
   --oj-paper: #f6efdc;
   --oj-surface: #fffdf7;
-  --oj-ink: #152e27;
-  --oj-muted: #536760;
-  --oj-line: #dce7e2;
-  --oj-loss: #a33d52;
-  --oj-loss-soft: #fbecee;
+  --oj-ink: #321126;
+  --oj-muted: #735a6a;
+  --oj-line: #e7d8df;
+  --oj-line-strong: #b491a5;
+  --oj-loss: var(--oj-crimson);
+  --oj-loss-soft: #fdecee;
+  --oj-warning: #805027;
+  --oj-gain-mid: #d7b3ce;
+  --oj-gain-strong: #9c578b;
+  --oj-loss-mid: #f1bcc5;
+  --oj-loss-strong: #dd7d8e;
   --oj-font: Inter, 'Segoe UI', sans-serif;
   --oj-heading: 'Inter Tight', Inter, sans-serif;
   --oj-mono: Consolas, 'Courier New', monospace;

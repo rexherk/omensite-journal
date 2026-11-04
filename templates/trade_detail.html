@@ -104,8 +104,8 @@
           <button type="button" data-tool="box">Box</button>
           <button type="button" data-tool="line">Line</button>
           <button type="button" data-tool="text">Text</button>
-          {% for color in ["#d7b56d", "#e08b7d", "#7dcea0", "#e7e4dc", "#8eb4e8"] %}
-          <button type="button" class="swatch {% if loop.first %}on{% endif %}" data-color="{{ color }}" style="background: {{ color }}"></button>
+          {% for color in markup_colors %}
+          <button type="button" class="swatch {% if loop.first %}on{% endif %}" data-color="{{ color }}" style="background: {{ color }}" aria-label="Markup color {{ color }}"></button>
           {% endfor %}
           <button type="button" class="ghost" data-undo>Undo</button>
           <button type="button" class="ghost" data-clear>Clear</button>
@@ -146,4 +146,4 @@
   </div>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/markup.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/markup.js?v=raspberry-1"></script>{% endblock %}

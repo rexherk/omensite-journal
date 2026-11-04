@@ -1,6 +1,4 @@
 (function () {
-  const colors = ["#d7b56d", "#e08b7d", "#7dcea0", "#e7e4dc", "#8eb4e8"];
-
   document.querySelectorAll(".mark").forEach(function (root) {
     const canvas = root.querySelector("canvas");
     const image = root.querySelector("img");
@@ -9,7 +7,7 @@
     let shapes = [];
     try { shapes = JSON.parse(canvas.dataset.shapes || "[]"); } catch (error) { shapes = []; }
     let tool = "arrow";
-    let color = colors[0];
+    let color = root.querySelector('[data-color]').dataset.color;
     let draft = null;
     let start = null;
 

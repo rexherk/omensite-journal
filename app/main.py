@@ -31,6 +31,7 @@ from app.catalog import (
     GRADES,
     KILL_ZONES,
     MACROS,
+    MARKUP_COLORS,
     MISTAKES,
     PREMIUM,
     SESSIONS,
@@ -108,6 +109,7 @@ def shell_context(request: Request) -> dict:
         except Exception:
             news = None
     return {
+        "markup_colors": MARKUP_COLORS,
         "tag_choices": TAGS,
         "mistake_choices": MISTAKES,
         "emotion_choices": EMOTIONS,

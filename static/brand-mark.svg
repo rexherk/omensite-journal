@@ -7,9 +7,9 @@
         <feFuncB type="linear" slope="1.09" intercept="-.045"/>
       </feComponentTransfer>
     </filter>
-    <filter id="outline" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+    <filter id="outline" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
       <feMorphology in="SourceAlpha" operator="dilate" radius="7" result="expanded"/>
-      <feFlood flood-color="#003B2D"/>
+      <feFlood flood-color="#560641"/>
       <feComposite in2="expanded" operator="in" result="edge"/>
       <feMerge>
         <feMergeNode in="edge"/>
@@ -22,11 +22,14 @@
   </defs>
   <g filter="url(#outline)">
     <g mask="url(#photo)">
-      <rect width="1024" height="1024" fill="#E0F354"/>
+      <rect width="1024" height="1024" fill="#BB7B3E"/>
       <!-- These regions assign color. The source photo supplies all visible edges. -->
-      <path fill="#FD550A"
+      <path fill="#AB2059"
             d="M150 150H650V216C506 205 368 321 363 445c-9 70 21 136 53 162l-56 68-31-50-67 89-23-7-87-67Z
                M445 638c60 50 119 65 160 59 119-1 195-71 229-177l16 15v326H256l8-102 61-63 28 42Z"/>
+      <!-- Color fields only. The unchanged source mask defines the eye and arrows. -->
+      <path fill="#C9203C" d="M465 492 651 400 695 350 837 467V650L590 704 470 640 480 571Z"/>
+      <path fill="#E13823" d="M174 849 323 623 356 682 491 529 554 489 634 454 738 337 738 253 826 208 804 306 654 458 568 495 352 755 324 712Z"/>
     </g>
   </g>
 </svg>

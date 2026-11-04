@@ -535,6 +535,17 @@ class AppTests(unittest.TestCase):
         again = self.client.get(f"/trades/{trade_id}")
         self.assertIn("arrow", again.text)
         self.assertIn("FVG", again.text)
+        from app.catalog import MARKUP_COLORS
+        for color in MARKUP_COLORS:
+            with self.subTest(markup_color=color):
+                saved = self.client.post(
+                    f"/trades/{trade_id}/shots/{shot_id}/markup",
+                    json={"shapes": [{"type": "line", "color": color,
+                                      "x1": 0.1, "y1": 0.2, "x2": 0.4, "y2": 0.5}]},
+                    headers={"X-CSRF": self.csrf},
+                )
+                self.assertEqual(saved.status_code, 200)
+                self.assertTrue(saved.json()["ok"])
         backup = self.client.get("/export.json")
         self.assertEqual(backup.status_code, 200)
         self.sign_in_as("private@example.com")

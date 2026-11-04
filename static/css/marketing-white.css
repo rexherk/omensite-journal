@@ -6,8 +6,8 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .main-navigation>a.nav-start:hover{color:var(--oj-on-primary)}
 .mobile-toggle span{background:var(--oj-secondary)}
 .hero {
-  /* A deeper orange supports contrast for the two display text colors. */
-  background: #ec4c05;
+  /* Warm white text keeps the raspberry hero readable at every size. */
+  background: var(--oj-primary);
   color: var(--oj-on-primary);
 }
 .hero-glow {
@@ -31,7 +31,7 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
   right: -26%;
 }
 .hero-glow::after {
-  background: var(--oj-deep-green);
+  background: linear-gradient(135deg,var(--oj-red-orange) 0 24%,var(--oj-deep) 24%);
   width: 118%;
   height: 66%;
   right: -14%;
@@ -45,17 +45,17 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
   line-height: .94;
   text-transform: uppercase;
 }
-.hero h1 > span{color:var(--oj-deep-green)}
+.hero h1 > span{color:var(--oj-surface)}
 .gradient-text{color:var(--oj-secondary)}
 .hero-eyebrow,.hero-eyebrow b,.hero-tools>p,.hero-visual::before,
 .hero-description,.hero-description strong,.trust-note>span,.trust-note b,.trust-note .icon{color:var(--oj-on-primary)}
 .hero-eyebrow b{border-color:currentColor}
 .hero-eyebrow>span{background:var(--oj-accent)}
-.hero .dark-button{background:var(--oj-accent);color:var(--oj-deep-green);border-radius:999px}
-.hero .dark-button:hover{background:var(--oj-accent-soft);color:var(--oj-deep-green)}
+.hero .dark-button{background:var(--oj-accent);color:var(--oj-on-accent);border-radius:999px}
+.hero .dark-button:hover{background:var(--oj-accent-soft);color:var(--oj-deep)}
 .tool-chips a{background:var(--oj-paper);border-color:var(--oj-paper);color:var(--oj-secondary)}
-.tool-chips a:hover{background:var(--oj-accent);border-color:var(--oj-accent);color:var(--oj-secondary)}
-.preview-dashboard{background:var(--oj-surface);border-color:var(--oj-secondary);box-shadow:0 20px 45px #152e2740}
+.tool-chips a:hover{background:var(--oj-accent);border-color:var(--oj-accent);color:var(--oj-on-accent)}
+.preview-dashboard{background:var(--oj-surface);border-color:var(--oj-secondary);box-shadow:0 20px 45px color-mix(in srgb, var(--oj-secondary) 25%, transparent)}
 .preview-side,.preview-main{background:#fff;border-color:var(--border)}
 .preview-brand .oj-brand{gap:4px;color:var(--oj-secondary)}.preview-brand .oj-mark{width:20px;height:20px}.preview-brand .oj-brand>.lockup{font-size:11px;letter-spacing:-.5px}.preview-brand .oj-brand small{font-size:3px;letter-spacing:2px;margin-top:4px;color:var(--oj-muted)}
 .preview-add{background:var(--oj-primary);color:var(--oj-on-primary)}
@@ -68,17 +68,17 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .preview-main .overview-calendar-note{font-size:5px;margin-top:9px}
 .preview-main .overview-equity{min-height:180px}
 .preview-heading{color:var(--oj-ink)}.preview-meta{color:var(--oj-muted)}.preview-meta>span{color:var(--oj-muted)}
-.floating-insight,.floating-activity,.floating-score{background:#fff;border-color:var(--oj-line);box-shadow:0 12px 35px #015d4718}
+.floating-insight,.floating-activity,.floating-score{background:#fff;border-color:var(--oj-line);box-shadow:0 12px 35px color-mix(in srgb, var(--oj-secondary) 9%, transparent)}
 .insight-question,.insight-answer{background:#fff;color:var(--oj-secondary);border-color:var(--oj-line)}
 .insight-answer strong{color:var(--oj-secondary)}.insight-answer p,.insight-answer small{color:var(--oj-muted)}
 .floating-activity>div+div{border-color:var(--oj-line)}.activity-icon{background:var(--oj-secondary-soft);color:var(--oj-secondary)}.floating-activity b{color:var(--oj-ink)}.floating-activity small,.floating-activity em{color:var(--oj-muted)}
-.floating-score>span{background:var(--oj-accent)}.floating-score small,.floating-score em{color:var(--oj-muted)}
-.proof-strip{background:var(--oj-paper);border-block:1px solid #015d4726}
-.proof-strip>div,.proof-strip>div:nth-child(-n+2){border-color:#015d4726}
-.proof-strip strong,.proof-strip span{color:var(--oj-deep-green)}
+.floating-score>span{background:var(--oj-accent);color:var(--oj-on-accent)}.floating-score small,.floating-score em{color:var(--oj-muted)}
+.proof-strip{background:var(--oj-paper);border-block:1px solid color-mix(in srgb, var(--oj-secondary) 15%, transparent)}
+.proof-strip>div,.proof-strip>div:nth-child(-n+2){border-color:color-mix(in srgb, var(--oj-secondary) 15%, transparent)}
+.proof-strip strong,.proof-strip span{color:var(--oj-deep)}
 .product-panel,.art-window,.art-toolbar,.sample-table th,.art-notification,.plan-note,.setup-metrics,.public-card,.auth-form-card,.public-note,.broker-support-card,.public-endcap,.discord-only-note{background:var(--oj-surface);border-color:var(--border)}
 .public-detail-art{background:none}
-.product-tabs button[aria-selected=true]{background:var(--lime);border-color:var(--oj-accent);color:var(--oj-secondary)}
+.product-tabs button[aria-selected=true]{background:var(--highlight);border-color:var(--oj-accent);color:var(--oj-on-accent)}
 .product-tabs button[aria-selected=true]>span{background:#ffffff80;color:var(--oj-secondary)}
 .insights-section{background:var(--oj-surface);border-color:var(--border)}
 .insights-section h2,.routine-heading h2{color:var(--ink)}.insights-section .gradient-text{color:var(--oj-secondary)}
@@ -92,19 +92,19 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .routine-cta,.privacy-note,.footer-bottom{border-color:var(--border)}
 .privacy-note h3{color:var(--oj-secondary);font-size:clamp(21px,2.6vw,31px);letter-spacing:-.035em}.privacy-note p{color:var(--oj-muted)}
 .access-section,.site-footer,.public-hero {
-  background: var(--oj-deep-green);
+  background: var(--oj-deep);
   color: var(--oj-paper);
-  border-color: var(--oj-deep-green);
+  border-color: var(--oj-deep);
 }
 .public-hero{background:var(--oj-secondary);border-color:var(--oj-secondary)}
 .access-section h2,.access-section .gradient-text,.public-hero h1{color:var(--oj-surface)}
 .access-section .eyebrow,.access-section>p:not(.eyebrow),.access-section>small,
 .public-breadcrumb,.public-hero .eyebrow,.public-lead{color:var(--oj-paper)}
-.access-section .gradient-button,.public-hero .gradient-button{background:var(--oj-accent);color:var(--oj-deep-green)}
+.access-section .gradient-button,.public-hero .gradient-button{background:var(--oj-accent);color:var(--oj-on-accent)}
 .access-section .gradient-button:hover,.public-hero .gradient-button:hover{background:var(--oj-accent-soft)}
 .access-section .outline-button{background:transparent;color:var(--oj-paper);border-color:var(--oj-paper)}
 .access-section .outline-button:hover{background:var(--oj-paper);color:var(--oj-secondary)}
-.step-number{background:var(--lime);color:var(--oj-secondary)}
+.step-number{background:var(--highlight);color:var(--oj-on-accent)}
 .footer-top h3,.public-demo-link{color:var(--oj-surface)}
 .footer-top>div>a:not(.oj-brand):hover,.footer-top>div>button:hover,.public-demo-link:hover{
   color:var(--oj-surface);
@@ -113,9 +113,13 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .footer-about>p,.footer-top>div>a:not(.oj-brand),.footer-top>div>button,
 .site-footer .oj-brand small,.footer-bottom,.footer-bottom p,.footer-about>span{color:var(--oj-paper)}
 .footer-bottom{border-color:#f6efdc50}
-.public-card:hover{box-shadow:0 10px 30px #015d470d}.public-card-icon,.topstep-emblem{background:var(--lime);color:var(--oj-secondary)}
+.public-card:hover{box-shadow:0 10px 30px color-mix(in srgb, var(--oj-secondary) 5%, transparent)}.public-card-icon,.topstep-emblem{background:var(--highlight);color:var(--oj-on-accent)}
 .public-endcap .gradient-button{background:var(--oj-primary);color:var(--oj-on-primary)}
 .positive{color:var(--oj-secondary)!important}.negative{color:var(--oj-loss)!important}
+.result-badge{background:var(--oj-secondary-soft);color:var(--oj-secondary)}
+.loss-badge{background:var(--oj-loss-soft);color:var(--oj-loss)}
+.prop-name>b{background:var(--oj-secondary-soft);color:var(--oj-secondary)}
+.score-scale{background:linear-gradient(90deg,var(--oj-crimson),var(--oj-accent),var(--oj-secondary))}
 dialog,.auth-dialog-inner,.guide-dialog .import-list li{background:var(--oj-surface)}
 @media(max-width:930px){.main-navigation,.dropdown-panel,.dropdown-panel.narrow{background:var(--paper);color:var(--oj-secondary)}.main-navigation>a,.nav-dropdown>.nav-parent{border-color:var(--border)}}
 @media(max-width:680px) {

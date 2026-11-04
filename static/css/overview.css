@@ -12,7 +12,7 @@
 .overview-viewbar>h2{font:500 clamp(8px,1.7cqw,14px) var(--oj-font);letter-spacing:0;margin:0;color:var(--oj-ink)}
 .overview-tabs{display:flex;gap:3px;padding:3px;border:1px solid var(--overview-line);border-radius:5px;background:#fff}
 .overview-tabs button{border:0;border-radius:3px;padding:7px 12px;min-height:0;background:#fff;color:var(--oj-muted);font:400 clamp(6px,1.25cqw,11px) var(--oj-font);box-shadow:none;cursor:pointer}
-.overview-tabs button[aria-pressed=true]{background:var(--oj-accent);color:var(--oj-secondary)}
+.overview-tabs button[aria-pressed=true]{background:var(--oj-accent);color:var(--oj-on-accent)}
 .overview-tabs button:focus-visible{outline:2px solid var(--oj-primary);outline-offset:2px}
 .overview-calendar-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:21px 0 15px;font-size:clamp(6px,1.3cqw,12px);color:var(--overview-muted)}
 .overview-calendar-bar strong{font-weight:500}.overview-calendar-bar b{font-weight:500;margin-left:5px}
@@ -24,11 +24,11 @@
 .overview-date{position:absolute;top:5px;left:6px;color:var(--oj-muted);font-size:clamp(5px,1.15cqw,9px);line-height:1}
 .overview-day>strong{font:500 clamp(6px,1.55cqw,13px)/1.25 var(--oj-heading);letter-spacing:-.025em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .overview-day>small{font:400 clamp(5px,1cqw,9px)/1.35 var(--oj-font)}
-.overview-day.day-win{background:var(--oj-secondary-soft);border-color:#cce3db;color:var(--oj-secondary)}
-.overview-day.day-loss{background:var(--oj-loss-soft);border-color:#efd8dc;color:var(--oj-loss)}
-.overview-day.day-flat{background:#f6f8f7;color:var(--oj-muted)}
+.overview-day.day-win{background:var(--oj-secondary-soft);border-color:var(--oj-gain-mid);color:var(--oj-secondary)}
+.overview-day.day-loss{background:var(--oj-loss-soft);border-color:var(--oj-loss-mid);color:var(--oj-loss)}
+.overview-day.day-flat{background:var(--oj-surface);color:var(--oj-muted)}
 .overview-day.day-off,.overview-day.outside-month{background:#fff}
-.overview-day.outside-month{border-color:#eef2f0}
+.overview-day.outside-month{border-color:var(--oj-line)}
 .overview-calendar-note{font-size:clamp(5px,1.15cqw,10px);color:var(--overview-muted);margin:13px 0 0;line-height:1.6}
 .overview-equity{padding:25px 0;min-height:200px;display:grid;align-items:center}
 .overview-equity>svg{display:block;width:100%;height:auto}

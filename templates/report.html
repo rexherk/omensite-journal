@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block body_class %}report-page{% endblock %}
 {% block title %}Report · Omensite Journal{% endblock %}
 {% block body %}
 <div class="actions">
@@ -22,6 +23,7 @@
 </section>
 <section class="panel">
   <h2>Trades</h2>
+  <div class="scroll">
   <table>
     <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th>R</th><th>Grade</th><th>Lesson</th></tr>
     {% for trade in trades %}
@@ -36,5 +38,6 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
 </section>
 {% endblock %}

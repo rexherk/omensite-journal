@@ -48,7 +48,7 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - Topstep CSV import (the only currently supported broker), plus manual fill entry
 - Chart slots for higher-timeframe context, entry, and after the exit, with markup
 - ICT tags, a checklist that grades A+ / A / B / C, and a short review on each trade
-- Orange, teal, and lime branding across public pages and the journal, with shared dashboard and calendar components
+- Raspberry, deep plum, warm ochre, red-orange, and crimson branding across public pages and the journal, with shared dashboard and calendar components
 - A read-only demo and homepage preview backed by the same sample trades, with matching P&L totals and days off
 - Dashboard, monthly P&L calendar, plain-language notes, rule-break cost, and profit left on the table
 - Prop-account limits: daily loss, trailing drawdown, and target progress
@@ -56,6 +56,8 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - Emotion and mistake tags, a daily plan, and weekly and monthly review pages
 - A playbook for your own setups
 - CSV export, a JSON backup, and a print view (use the browser's Save as PDF)
+
+Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#560641`, warm ochre `#BB7B3E`, red-orange `#E13823`, and crimson `#C9203C`. Cream framing and white data surfaces support readable plum text. Profit indicators use plum and loss indicators use crimson, with signs and labels alongside color. The transparent logo uses all five colors and preserves the original image mask in `static/brand-mark.svg`; `static/brand-mark.png` is the tightly cropped 256-pixel website export.
 
 ## What is not included
 

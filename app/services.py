@@ -26,6 +26,7 @@ from app.catalog import (
     GRADES,
     KILL_ZONES,
     MACROS,
+    MARKUP_COLORS,
     MISTAKES,
     PREMIUM,
     SESSIONS,
@@ -49,7 +50,8 @@ UTC = ZoneInfo("UTC")
 NY = ZoneInfo("America/New_York")
 SAMPLE_NOTE = "Sample journal entry"
 _TOKEN = re.compile(r"[A-Za-z0-9_-]{8,80}")
-_COLORS = {"#d7b56d", "#e08b7d", "#7dcea0", "#e7e4dc", "#8eb4e8"}
+# Existing saved annotations and backups retain their original colors.
+_COLORS = set(MARKUP_COLORS) | {"#d7b56d", "#e08b7d", "#7dcea0", "#e7e4dc", "#8eb4e8"}
 _BREAKDOWNS = [
     ("Session", "by_session"),
     ("Kill zone", "by_kill_zone"),
