@@ -64,12 +64,12 @@
 
 <section class="dashboard-details"><div class="panel-label"><h2>The details behind your performance</h2></div>
 <section class="stats">
-  <div class="stat"><span>Expectancy</span><strong>{% if dash.closed_count %}{{ dash.expectancy | money }}{% else %}—{% endif %}</strong></div>
-  <div class="stat"><span>Average R</span><strong class="count" {% if dash.average_r is not none %}data-count="{{ dash.average_r }}" data-kind="r"{% endif %}>{{ dash.average_r | rmult }}</strong></div>
-  <div class="stat"><span>Average win</span><strong>{{ dash.average_win | money }}</strong></div>
-  <div class="stat"><span>Average loss</span><strong>{{ dash.average_loss | money }}</strong></div>
+  <div class="stat"><span>Expectancy</span><strong class="{{ dash.expectancy | pnl_class }}">{% if dash.closed_count %}{{ dash.expectancy | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Average R:R</span><strong class="count {{ dash.average_r | pnl_class }}" {% if dash.average_r is not none %}data-count="{{ dash.average_r }}" data-kind="r"{% endif %}>{{ dash.average_r | rmult }}</strong></div>
+  <div class="stat"><span>Average win</span><strong class="{{ dash.average_win | pnl_class }}">{{ dash.average_win | money }}</strong></div>
+  <div class="stat"><span>Average loss</span><strong class="{{ dash.average_loss | pnl_class }}">{{ dash.average_loss | money }}</strong></div>
   <div class="stat"><span>Max drawdown</span><strong>{% if dash.closed_count %}{{ dash.max_drawdown | money }}{% else %}—{% endif %}</strong></div>
-  <div class="stat"><span>Rule-break P&amp;L</span><strong>{% if dash.closed_count %}{{ dash.rule_break_pnl | money }}{% else %}—{% endif %}</strong></div>
+  <div class="stat"><span>Rule-break P&amp;L</span><strong class="{{ dash.rule_break_pnl | pnl_class }}">{% if dash.closed_count %}{{ dash.rule_break_pnl | money }}{% else %}—{% endif %}</strong></div>
   <div class="stat"><span>Left on table</span><strong>{% if dash.closed_count %}{{ dash.left_on_table | money }}{% else %}—{% endif %}</strong></div>
   {% set streak = dash.streak %}
   <div class="stat"><span>Current streak</span><strong>{% if streak.kind %}{{ streak.current }} {{ 'winning' if streak.kind == 'win' else 'losing' }} day{{ 's' if streak.current != 1 }}{% else %}—{% endif %}</strong></div>
@@ -102,7 +102,7 @@
       {% if row.challenge and row.challenge.passed_on %}
       <div class="stats challenge-stats">
         <div class="stat"><span>Final balance</span><strong>{{ row.equity | money }}</strong></div>
-        <div class="stat"><span>Net P&amp;L · {{ row.account.profit_target | money }} target</span><strong class="up">{{ row.total_pnl | money }}</strong></div>
+        <div class="stat"><span>Net P&amp;L · {{ row.account.profit_target | money }} target</span><strong class="{{ row.total_pnl | pnl_class }}">{{ row.total_pnl | money }}</strong></div>
         <div class="stat"><span>Best day share · {{ row.consistency_pct | plain }}% limit</span><strong>{{ row.best_share | pct }}</strong></div>
       </div>
       {% elif row.funded_placeholder %}
@@ -124,7 +124,7 @@
       <p>Consistency {{ row.consistency_pct | plain }}%</p>
       <div class="bar-track"><span class="bar-fill {% if used >= 1 %}hot{% elif used >= 0.7 %}warm{% endif %}" style="width: {{ (used if used < 1 else 1) * 100 }}%"></span></div>
       {% endif %}
-      <p>Equity {{ row.equity | money }} · Today {{ row.today_pnl | money }} · Total {{ row.total_pnl | money }}</p>
+      <p>Equity {{ row.equity | money }} · Today <span class="{{ row.today_pnl | pnl_class }}">{{ row.today_pnl | money }}</span> · Total <span class="{{ row.total_pnl | pnl_class }}">{{ row.total_pnl | money }}</span></p>
       <p>Daily loss left {{ row.daily_left | money }} · Trailing room {{ row.trail_left | money }} · Drawdown used {{ row.drawdown | money }}</p>
       <p>Profit target progress {{ row.target_ratio | pct }}</p>
       {% if row.daily_hit %}<p class="down">Daily loss limit is hit.</p>{% endif %}
@@ -144,14 +144,14 @@
     <h2>{{ section.title }}</h2>
     <div class="scroll">
       <table>
-        <tr><th>Name</th><th>Trades</th><th>Win rate</th><th>Avg R</th><th>Net</th></tr>
+        <tr><th>Name</th><th>Trades</th><th>Win rate</th><th>Avg R:R</th><th>Net</th></tr>
         {% for row in section.rows %}
         <tr>
           <td>{{ row.name }}<span class="bar" style="width: {{ row.bar }}%"></span></td>
           <td class="num">{{ row.count }}</td>
           <td class="num">{{ row.win_rate | pct }}</td>
-          <td class="num">{{ row.average_r | rmult }}</td>
-          <td class="num {{ 'up' if row.pnl > 0 else 'down' if row.pnl < 0 else '' }}">{{ row.pnl | money }}</td>
+          <td class="num {{ row.average_r | pnl_class }}">{{ row.average_r | rmult }}</td>
+          <td class="num {{ row.pnl | pnl_class }}">{{ row.pnl | money }}</td>
         </tr>
         {% else %}
         <tr><td colspan="5">Nothing in this split yet.</td></tr>
@@ -168,7 +168,7 @@
   {% if recent %}
   <div class="scroll">
     <table>
-      <tr><th>When</th><th>Market</th><th>Side</th><th>Net</th><th>R</th><th></th></tr>
+      <tr><th>When</th><th>Market</th><th>Side</th><th>Net</th><th title="Risk/reward">R:R</th><th></th></tr>
       {% for trade in recent %}
       <tr>
         <td>{{ trade.when }}</td>
@@ -180,8 +180,8 @@
           {% if trade.news %}<span class="pill-tag warn">News Day</span>{% endif %}
           {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
         </td>
-        <td class="num {{ 'up' if trade.net_pnl > 0 else 'down' if trade.net_pnl < 0 else '' }}">{{ trade.net_pnl | money }}</td>
-        <td class="num">{{ trade.r_multiple | rmult }}</td>
+        <td class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+        <td class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
         <td>{% if not trade.is_closed %}Open{% else %}{{ trade.grade or "—" }}{% endif %}</td>
       </tr>
       {% endfor %}

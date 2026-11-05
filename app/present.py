@@ -17,6 +17,16 @@ def money(value) -> str:
     return f"{sign}${abs(number):,.2f}"
 
 
+def pnl_class(value) -> str:
+    """Use the same gain/loss colors for money and realized risk/reward."""
+    if value is None or value == "":
+        return "neutral"
+    number = float(value)
+    if not math.isfinite(number) or number == 0:
+        return "neutral"
+    return "positive" if number > 0 else "negative"
+
+
 def rmult(value) -> str:
     if value is None or value == "":
         return "—"
@@ -84,7 +94,8 @@ def equity_svg(curve: list[dict]) -> str:
         prefix = "M" if index == 0 else "L"
         commands.append(f"{prefix}{x_at(index):.1f},{y_at(number):.1f}")
     zero = y_at(0.0)
-    color = "var(--accent)" if values[-1] >= 0 else "var(--down)"
+    color = {"positive": "var(--oj-gain)", "negative": "var(--oj-loss)",
+             "neutral": "var(--oj-muted)"}[pnl_class(values[-1])]
     path = " ".join(commands)
     return (
         f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Equity curve">'

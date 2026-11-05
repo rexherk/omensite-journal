@@ -120,7 +120,6 @@ body,.site-header,.main-navigation,.dropdown-panel,.dropdown-panel.narrow{backgr
 .footer-bottom{border-color:#f6efdc50}
 .public-card:hover{box-shadow:0 10px 30px color-mix(in srgb, var(--oj-secondary) 5%, transparent)}.public-card-icon,.topstep-emblem{background:var(--highlight);color:var(--oj-on-accent)}
 .public-endcap .gradient-button{background:var(--oj-primary);color:var(--oj-on-primary)}
-.positive{color:var(--oj-secondary)!important}.negative{color:var(--oj-loss)!important}
 .result-badge{background:var(--oj-secondary-soft);color:var(--oj-secondary)}
 .loss-badge{background:var(--oj-loss-soft);color:var(--oj-loss)}
 .prop-name>b{background:var(--oj-secondary-soft);color:var(--oj-secondary)}

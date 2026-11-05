@@ -4,7 +4,7 @@
   --bg:var(--oj-paper);--bg-subtle:var(--oj-surface);--surface:var(--oj-surface);--surface-hover:var(--oj-secondary-soft);
   --line:var(--oj-line);--line-strong:var(--oj-line-strong);--text:var(--oj-ink);--ink-muted:var(--oj-muted);--ink-faint:var(--oj-muted);
   --accent:var(--oj-secondary);--accent-strong:var(--oj-secondary-hover);--on-accent:#fff;--accent-soft:var(--oj-secondary-soft);--link:var(--oj-secondary);
-  --up:var(--oj-secondary);--down:var(--oj-loss);--warn:var(--oj-warning);--gain-fill:var(--oj-secondary);--loss-fill:var(--oj-loss-mid);
+  --up:var(--oj-gain);--down:var(--oj-loss);--warn:var(--oj-warning);--gain-fill:var(--oj-gain);--loss-fill:var(--oj-loss-mid);
   --heat-gain-1:var(--oj-secondary-soft);--heat-gain-2:var(--oj-gain-mid);--heat-gain-3:var(--oj-gain-strong);
   --heat-loss-1:var(--oj-loss-soft);--heat-loss-2:var(--oj-loss-mid);--heat-loss-3:var(--oj-loss-strong);--heat-none:#fff;--chart-grid:var(--oj-line);
   --font-sans:var(--oj-font);--font-serif:var(--oj-heading);--font-mono:var(--oj-mono);

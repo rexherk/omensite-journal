@@ -25,12 +25,12 @@
 
   <div data-tab-panel="overview">
   <section class="stats">
-    <div class="stat"><span>Net</span><strong class="{{ 'up' if trade.net_pnl > 0 else 'down' if trade.net_pnl < 0 else '' }}">{{ trade.net_pnl | money }}</strong></div>
-    <div class="stat"><span>Gross</span><strong>{{ trade.gross_pnl | money }}</strong></div>
+    <div class="stat"><span>Net</span><strong class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</strong></div>
+    <div class="stat"><span>Gross</span><strong class="{{ trade.gross_pnl | pnl_class }}">{{ trade.gross_pnl | money }}</strong></div>
     <div class="stat"><span>Points</span><strong>{{ trade.points | plain }}</strong></div>
     <div class="stat"><span>Ticks</span><strong>{{ trade.ticks | plain }}</strong></div>
-    <div class="stat"><span>R</span><strong>{{ trade.r_multiple | rmult }}</strong></div>
-    <div class="stat"><span>Planned R</span><strong>{{ trade.planned_r | rmult }}</strong></div>
+    <div class="stat"><span>R:R</span><strong class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</strong></div>
+    <div class="stat"><span>Planned R:R</span><strong>{{ trade.planned_r | rmult }}</strong></div>
     <div class="stat"><span>Risk</span><strong>{{ trade.risk_dollars | money }}</strong></div>
     <div class="stat"><span>Hold</span><strong>{{ trade.hold_seconds | hold }}</strong></div>
     <div class="stat"><span>MAE</span><strong>{{ trade.mae_dollars | money }}</strong></div>

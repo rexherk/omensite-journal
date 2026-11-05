@@ -8,13 +8,13 @@
 </div>
 <p class="muted">Use the browser print dialog and choose Save as PDF. Hour is {{ zone_name }}. Session and kill zone use New York time.</p>
 <section class="stats">
-  <div class="stat"><span>Net</span><strong>{{ dash.net_pnl | money }}</strong></div>
+  <div class="stat"><span>Net</span><strong class="{{ dash.net_pnl | pnl_class }}">{{ dash.net_pnl | money }}</strong></div>
   <div class="stat"><span>Win rate</span><strong>{{ dash.win_rate | pct }}</strong></div>
   <div class="stat"><span>Profit factor</span><strong>{{ dash.profit_factor | factor }}</strong></div>
-  <div class="stat"><span>Expectancy</span><strong>{{ dash.expectancy | money }}</strong></div>
-  <div class="stat"><span>Average R</span><strong>{{ dash.average_r | rmult }}</strong></div>
+  <div class="stat"><span>Expectancy</span><strong class="{{ dash.expectancy | pnl_class }}">{{ dash.expectancy | money }}</strong></div>
+  <div class="stat"><span>Average R:R</span><strong class="{{ dash.average_r | pnl_class }}">{{ dash.average_r | rmult }}</strong></div>
   <div class="stat"><span>Max drawdown</span><strong>{{ dash.max_drawdown | money }}</strong></div>
-  <div class="stat"><span>Rule-break P&amp;L</span><strong>{{ dash.rule_break_pnl | money }}</strong></div>
+  <div class="stat"><span>Rule-break P&amp;L</span><strong class="{{ dash.rule_break_pnl | pnl_class }}">{{ dash.rule_break_pnl | money }}</strong></div>
   <div class="stat"><span>Left on table</span><strong>{{ dash.left_on_table | money }}</strong></div>
 </section>
 <section class="panel">
@@ -25,14 +25,14 @@
   <h2>Trades</h2>
   <div class="scroll">
   <table>
-    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th>R</th><th>Grade</th><th>Lesson</th></tr>
+    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th title="Risk/reward">R:R</th><th>Grade</th><th>Lesson</th></tr>
     {% for trade in trades %}
     <tr>
       <td>{{ trade.when }}</td>
       <td>{{ trade.instrument }}</td>
       <td>{{ trade.direction }}</td>
-      <td>{{ trade.net_pnl | money }}</td>
-      <td>{{ trade.r_multiple | rmult }}</td>
+      <td class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+      <td class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
       <td>{{ trade.grade or "—" }}</td>
       <td>{{ trade.lesson or "" }}</td>
     </tr>

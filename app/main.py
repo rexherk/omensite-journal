@@ -42,7 +42,7 @@ from app.firms import FIRMS
 from app.public_pages import PUBLIC_PAGES, PRODUCT_PAGES, SOLUTION_PAGES, RESOURCE_PAGES
 from app.sample_data import DEMO_EMAIL, sample_overview, sample_through
 from app.instruments import FUTURES
-from app.present import factor, hold, money, pct, plain, rmult
+from app.present import factor, hold, money, pct, plain, pnl_class, rmult
 from app.services import (
     add_checklist_item,
     add_earnings_row,
@@ -95,6 +95,7 @@ DEMO_COOKIE = "omensite_demo"
 ROOT = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 templates.env.filters["money"] = money
+templates.env.filters["pnl_class"] = pnl_class
 templates.env.filters["rmult"] = rmult
 templates.env.filters["pct"] = pct
 templates.env.filters["factor"] = factor

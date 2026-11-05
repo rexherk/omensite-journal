@@ -29,7 +29,7 @@
 <section class="panel">
   <h2>Trades opened this day</h2>
   {% for trade in opened %}
-  <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }} {{ trade.direction }}</a> {{ trade.net_pnl | money }} · {{ trade.r_multiple | rmult }}</p>
+  <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }} {{ trade.direction }}</a> <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span> · <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span></p>
   {% else %}
   <p class="muted">No trade opened on this date in your timezone.</p>
   {% endfor %}

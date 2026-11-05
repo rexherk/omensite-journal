@@ -13,14 +13,14 @@
   <article class="panel">
     <h2>{{ title }}</h2>
     <p class="muted">{{ label }}</p>
-    <p>{{ block.count }} closed · {{ block.net_pnl | money }} · Plan adherence {{ block.adherence | pct }}</p>
+    <p>{{ block.count }} closed · <span class="{{ block.net_pnl | pnl_class }}">{{ block.net_pnl | money }}</span> · Plan adherence {{ block.adherence | pct }}</p>
     <h3>Best</h3>
     {% for trade in block.best %}
-    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> {{ trade.r_multiple | rmult }} · {{ trade.net_pnl | money }}<br><span class="muted">{{ trade.lesson or "" }}</span></p>
+    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span> · <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span><br><span class="muted">{{ trade.lesson or "" }}</span></p>
     {% else %}<p class="muted">No closed trades in this {{ title|lower }}.</p>{% endfor %}
     <h3>Worst</h3>
     {% for trade in block.worst %}
-    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> {{ trade.r_multiple | rmult }} · {{ trade.net_pnl | money }}</p>
+    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span> · <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span></p>
     {% endfor %}
     <h3>Mistakes</h3>
     {% for name, count in block.mistakes %}
