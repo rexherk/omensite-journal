@@ -166,9 +166,10 @@
 <section class="panel">
   <h2>Recent</h2>
   {% if recent %}
+  <p class="muted">R:R = net P&amp;L after fees ÷ initial risk. An $800 net profit on $200 risk is +4.00R.</p>
   <div class="scroll">
     <table>
-      <tr><th>When</th><th>Market</th><th>Side</th><th>Net</th><th title="Risk/reward">R:R</th><th></th></tr>
+      <tr><th>When</th><th>Market</th><th>Side</th><th>Net</th><th>Risk</th><th title="Net P&amp;L after fees divided by initial risk">R:R</th><th></th></tr>
       {% for trade in recent %}
       <tr>
         <td>{{ trade.when }}</td>
@@ -181,6 +182,7 @@
           {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
         </td>
         <td class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+        <td class="num">{{ trade.risk_dollars | money }}</td>
         <td class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
         <td>{% if not trade.is_closed %}Open{% else %}{{ trade.grade or "—" }}{% endif %}</td>
       </tr>

@@ -12,6 +12,29 @@ def _at(hour: int, minute: int) -> datetime:
 
 
 class CalcTests(unittest.TestCase):
+    def test_realized_r_uses_net_profit_divided_by_initial_risk(self):
+        for direction, exit_price, fees, expected_net, expected_r in [
+            ("long", 5016, 0, 800, 4.0),
+            ("short", 4984, 0, 800, 4.0),
+            ("long", 5016, 4.5, 795.5, 3.9775),
+            ("short", 4984, 4.5, 795.5, 3.9775),
+            ("long", 4996, 0, -200, -1.0),
+            ("short", 5004, 0, -200, -1.0),
+            ("long", 5000, 0, 0, 0.0),
+        ]:
+            with self.subTest(direction=direction, exit=exit_price, fees=fees):
+                stats = summarize(
+                    direction=direction,
+                    legs=[Leg("entry", 1, 5000, _at(10, 0)),
+                          Leg("exit", 1, exit_price, _at(10, 30))],
+                    stop=4996 if direction == "long" else 5004,
+                    target=None, fees=fees, point_value=50, tick=0.25,
+                    mae_price=None, mfe_price=None,
+                )
+                self.assertEqual(stats.risk_dollars, 200)
+                self.assertEqual(stats.net_pnl, expected_net)
+                self.assertEqual(stats.r_multiple, expected_r)
+
     def test_long_es_round_trip(self):
         stats = summarize(
             direction="long",

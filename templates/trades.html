@@ -51,7 +51,7 @@
   {% if trades %}
   <div class="scroll">
     <table>
-      <tr><th>Opened</th><th>Market</th><th>Side</th><th>Account</th><th>Net</th><th title="Risk/reward">R:R</th><th>Session</th><th>Grade</th><th></th></tr>
+      <tr><th>Opened</th><th>Market</th><th>Side</th><th>Account</th><th>Net</th><th>Risk</th><th title="Net P&amp;L after fees divided by initial risk">R:R</th><th>Session</th><th>Grade</th><th></th></tr>
       {% for trade in trades %}
       <tr>
         <td>{{ trade.when }}</td>
@@ -65,6 +65,7 @@
         </td>
         <td>{{ trade.account_name }}</td>
         <td class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+        <td class="num">{{ trade.risk_dollars | money }}</td>
         <td class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
         <td>{{ trade.session }}</td>
         <td>{{ trade.grade or "—" }}</td>

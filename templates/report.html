@@ -25,13 +25,14 @@
   <h2>Trades</h2>
   <div class="scroll">
   <table>
-    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th title="Risk/reward">R:R</th><th>Grade</th><th>Lesson</th></tr>
+    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th>Risk</th><th title="Net P&amp;L after fees divided by initial risk">R:R</th><th>Grade</th><th>Lesson</th></tr>
     {% for trade in trades %}
     <tr>
       <td>{{ trade.when }}</td>
       <td>{{ trade.instrument }}</td>
       <td>{{ trade.direction }}</td>
       <td class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+      <td>{{ trade.risk_dollars | money }}</td>
       <td class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
       <td>{{ trade.grade or "—" }}</td>
       <td>{{ trade.lesson or "" }}</td>

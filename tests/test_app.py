@@ -268,6 +268,31 @@ class AppTests(unittest.TestCase):
                 self.assertTrue(any(date.fromisoformat(day).weekday() < 5 and n == "0" for day, _, n in days))
                 self.assertTrue(all(date.fromisoformat(day).weekday() < 5 for day, _, n in days if n != "0"))
 
+    def test_all_demo_r_values_match_fills_and_initial_stop_risk(self):
+        from app.instruments import FUTURES
+
+        self.client.get("/demo").raise_for_status()
+        backup = self.client.get("/export/backup").json()
+        self.assertGreater(len(backup["trades"]), 100)
+        for trade in backup["trades"]:
+            with self.subTest(opened=trade["opened_local"], instrument=trade["instrument"]):
+                entries = [leg for leg in trade["legs"] if leg["kind"] == "entry"]
+                exits = [leg for leg in trade["legs"] if leg["kind"] == "exit"]
+                quantity = sum(leg["qty"] for leg in entries)
+                self.assertEqual(quantity, sum(leg["qty"] for leg in exits))
+                entry_value = sum(leg["price"] * leg["qty"] for leg in entries)
+                exit_value = sum(leg["price"] * leg["qty"] for leg in exits)
+                point_value = FUTURES[trade["instrument"]].point_value
+                sign = 1 if trade["direction"] == "long" else -1
+                gross = (exit_value - entry_value) * point_value * sign
+                net = gross - trade["fees"]
+                risk = abs(entry_value / quantity - trade["stop"]) * quantity * point_value
+                self.assertGreater(risk, 0)
+                self.assertAlmostEqual(trade["gross_pnl"], gross, places=2)
+                self.assertAlmostEqual(trade["net_pnl"], net, places=2)
+                self.assertAlmostEqual(trade["risk_dollars"], risk, places=2)
+                self.assertAlmostEqual(trade["r_multiple"], net / risk, places=4)
+
     def test_topstep_demo_challenge_migrates_and_passes(self):
         from collections import defaultdict
         from app import db
