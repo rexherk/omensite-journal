@@ -8,13 +8,15 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from app import __version__
 from app.auth import new_token
 from app.paths import data_dir
 
 STATE_COOKIE = "omensite_discord_state"
 AUTHORIZE = "https://discord.com/oauth2/authorize"
 TOKEN_URL = "https://discord.com/api/oauth2/token"
-ME_URL = "https://discord.com/api/users/@me"
+ME_URL = "https://discord.com/api/v10/users/@me"
+USER_AGENT = f"DiscordBot (https://journal.omensite.com, {__version__})"
 
 
 class DiscordNotConfigured(Exception):
@@ -81,7 +83,8 @@ def _post_form(url: str, fields: dict[str, str]) -> dict:
     request = urllib.request.Request(
         url,
         data=body,
-        headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+        headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json",
+                 "User-Agent": USER_AGENT},
     )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
@@ -95,7 +98,7 @@ def _post_form(url: str, fields: dict[str, str]) -> dict:
 def _get_json(url: str, token: str) -> dict:
     request = urllib.request.Request(
         url,
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json", "User-Agent": USER_AGENT},
     )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
