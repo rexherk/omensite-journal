@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Trades · Omensite Journal{% endblock %}
 {% block body %}
-<div class="actions">
+<header class="trades-heading">
   <h1>Trades</h1>
-  <a class="button" href="/trades/new">Log a trade</a>
-</div>
-<form class="filters panel" method="get" action="/trades">
+  <p class="muted">Filter your trade history by market, session, side, grade, or account. Select a market symbol to open the trade and review its details.</p>
+</header>
+<form class="filters panel trade-filters" method="get" action="/trades" aria-label="Filter trades">
   <label>Instrument
     <select name="instrument">
       <option value="">All</option>
@@ -47,35 +47,59 @@
   </label>
   <button type="submit">Filter</button>
 </form>
-<section class="panel">
+<section class="panel trade-history" aria-label="Trade history">
   {% if trades %}
-  <div class="scroll">
+  <div class="scroll" role="region" aria-label="Trade history table" tabindex="0">
     <table>
-      <tr><th>Opened</th><th>Market</th><th>Side</th><th>Account</th><th>Net</th><th>Risk</th><th title="Net P&amp;L after fees divided by initial risk">R:R</th><th>Session</th><th>Grade</th><th></th></tr>
+      <thead>
+        <tr>
+          <th scope="col">Opened</th>
+          <th scope="col">Market</th>
+          <th scope="col">Side</th>
+          <th scope="col">Account</th>
+          <th scope="col">Net</th>
+          <th scope="col" title="Net P&amp;L after fees divided by initial risk">R:R</th>
+          <th scope="col">Session</th>
+          <th scope="col">Grade</th>
+          <th scope="col">Hold</th>
+        </tr>
+      </thead>
+      <tbody>
       {% for trade in trades %}
       <tr>
-        <td>{{ trade.when }}</td>
-        <td><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> {% for tag in trade.tags %}<span class="tag">{{ tag }}</span>{% endfor %}{% if trade.news %}<span class="tag news">News</span>{% endif %}</td>
-        <td>{{ trade.direction }}
-          {% if trade.grade == "A+" %}<span class="pill-tag good">A+ Setup</span>{% endif %}
-          {% if trade.followed_plan == 0 %}<span class="pill-tag bad">Rule Broken</span>{% endif %}
-          {% if "Revenge trade" in trade.mistakes %}<span class="pill-tag bad">Revenge</span>{% endif %}
-          {% if trade.news %}<span class="pill-tag warn">News Day</span>{% endif %}
-          {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
+        <td><time datetime="{{ trade.opened_at }}">{{ trade.when }}</time></td>
+        <td class="trade-market">
+          <a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a>
+          <div class="trade-badges">
+            {% for tag in trade.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+            {% if trade.news %}<span class="tag news">News</span>{% endif %}
+          </div>
+        </td>
+        <td class="trade-side">{{ trade.direction }}
+          <div class="trade-badges">
+            {% if trade.followed_plan == 0 %}<span class="pill-tag bad">Rule Broken</span>{% endif %}
+            {% if "Revenge trade" in trade.mistakes %}<span class="pill-tag bad">Revenge</span>{% endif %}
+            {% if trade.news %}<span class="pill-tag warn">News Day</span>{% endif %}
+            {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
+          </div>
         </td>
         <td>{{ trade.account_name }}</td>
         <td class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
-        <td class="num">{{ trade.risk_dollars | money }}</td>
         <td class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
         <td>{{ trade.session }}</td>
         <td>{{ trade.grade or "—" }}</td>
         <td>{% if not trade.is_closed %}Open{% else %}{{ trade.hold_label }}{% endif %}</td>
       </tr>
       {% endfor %}
+      </tbody>
     </table>
   </div>
   {% else %}
-  <p>Your blotter is empty. <a href="/trades/new">Log a trade</a> or <a href="/import">import fills</a>.</p>
+  {% if filters.instrument or filters.session or filters.direction or filters.grade or filters.account %}
+  <p>No trades match these filters. <a href="/trades">Clear filters</a>.</p>
+  {% else %}
+  <p>Your trade history will appear here after you <a href="/import">import fills</a> or record a trade.</p>
+  {% endif %}
   {% endif %}
 </section>
 {% endblock %}
