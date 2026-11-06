@@ -114,6 +114,45 @@ def demo_trade_plan(instrument: str, direction: str, entry: float, qty: float,
     }
 
 
+def demo_ict_context(setup: str, direction: str, stop: float, target: float) -> tuple[dict, list[str]]:
+    """Describe the simulated setup that accompanies the recorded trade plan."""
+    long = direction == "long"
+    sweep = "Sell-side liquidity sweep" if long else "Buy-side liquidity sweep"
+    edge = "low" if long else "high"
+    liquidity = "buy-side" if long else "sell-side"
+    tags, scenario = {
+        "Opening range": (
+            [sweep, "MSS"],
+            f"Price swept the {edge} of the opening range, then displaced through the last opposing swing. "
+            "The entry was on a retest of the broken swing.",
+        ),
+        "Liquidity sweep": (
+            [sweep, "MSS", "FVG"],
+            f"Price swept a prior swing {edge}. Displacement shifted market structure and left a fair value gap. "
+            "The entry was on a retracement into that gap.",
+        ),
+        "Fair value gap": (
+            ["BOS", "FVG"],
+            "Displacement broke a swing in the direction of the higher-timeframe bias. "
+            "The entry was on a retracement into the fair value gap left by the move.",
+        ),
+        "Break & retest": (
+            ["BOS", "Order Block"],
+            "Displacement broke a swing in the direction of the higher-timeframe bias. "
+            "The entry was on a retest of the last opposing candle before the break.",
+        ),
+    }[setup]
+    return {
+        "htf_bias": "Bullish" if long else "Bearish",
+        "draw": "BSL" if long else "SSL",
+        "premium": "Discount" if long else "Premium",
+        "range_low": min(stop, target),
+        "range_high": max(stop, target),
+        "lesson": f"Simulated setup. {scenario} The plan targeted {liquidity} liquidity at {target:g}, "
+                  f"with invalidation at {stop:g}.",
+    }, tags
+
+
 @lru_cache(maxsize=2)
 def _sample_trades(through: date) -> tuple[dict, ...]:
     records = []
@@ -133,17 +172,20 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
             stamp = f"{day.isoformat()}T{9 + slot // 2:02d}:{35 + (slot % 2) * 20:02d}:00"
             opened = datetime.fromisoformat(stamp)
             net = gross - 4.5
+            setup = ("Opening range", "Liquidity sweep", "Fair value gap", "Break & retest")[index % 4]
+            plan = demo_trade_plan(instrument, direction, entry, qty, opened, net)
+            ict, tags = demo_ict_context(setup, direction, plan["stop"], plan["target"])
             records.append({
                 "id": index + 1, "instrument": instrument, "qty": qty,
                 "is_prop": CHALLENGE_START <= day <= CHALLENGE_END,
                 "direction": direction, "entry": entry, "exit": exit_price,
                 "fees": 4.5, "is_closed": 1, "net_pnl": net,
                 "opened_at": stamp, "closed_at": (opened + timedelta(minutes=18 + index % 29)).isoformat(),
-                **demo_trade_plan(instrument, direction, entry, qty, opened, net),
+                **plan,
                 "followed_plan": int(net > 0 or index % 4 != 0),
                 "left_on_table": 0, "session": "NY AM", "kill_zone": "NY AM",
                 "grade": "A+" if net > 0 else "B", "emotion_before": "Calm" if net > 0 else "Anxious",
-                "setup": ("Opening range", "Liquidity sweep", "Fair value gap", "Break & retest")[index % 4],
+                "setup": setup, "ict": ict, "tags": tags,
             })
     return tuple(records)
 
@@ -159,7 +201,7 @@ def demo_challenge(row: dict) -> dict:
 def sample_overview(through: date | None = None) -> dict:
     through = through or sample_through()
     trades = sample_trades(through)
-    board = dashboard(trades, {})
+    board = dashboard(trades, {trade["id"]: trade["tags"] for trade in trades})
     month = date.fromisoformat(trades[-1]["closed_at"][:10]) if trades else through
     recent = list(reversed(trades))
     review = next((trade for trade in recent if trade["setup"] == "Liquidity sweep"

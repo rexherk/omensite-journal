@@ -41,7 +41,7 @@ from app.paths import import_dir, upload_path
 from app.present import equity_svg
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_NOTE, DEMO_PROP,
-    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, demo_trade_plan, sample_trades,
+    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, demo_ict_context, demo_trade_plan, sample_trades,
 )
 from app.services_error import JournalError
 from app import db
@@ -791,18 +791,19 @@ def complete_reset(conn, token: str, password: str) -> None:
     db.delete_reset(conn, token)
 
 
-def _demo_trades_without_plan(conn, user_id: int) -> list[dict]:
+def _demo_trades_to_update(conn, user_id: int) -> list[dict]:
     return db.many(
         conn,
-        """SELECT id, instrument, direction, avg_entry, qty_entered, opened_at, net_pnl
+        """SELECT id, instrument, direction, avg_entry, qty_entered, opened_at, net_pnl,
+                  setup, htf_bias, stop, target, planned_r
            FROM trades WHERE user_id = ? AND notes = ?
-           AND (target IS NULL OR planned_r IS NULL OR planned_r <> 2)""",
+           AND (target IS NULL OR planned_r IS NULL OR planned_r <> 2 OR COALESCE(htf_bias, '') = '')""",
         (user_id, DEMO_NOTE),
     )
 
 
 def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
-    if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)) or _demo_trades_without_plan(conn, user_id):
+    if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)) or _demo_trades_to_update(conn, user_id):
         return True
     names = {row["name"] for row in db.accounts(conn, user_id)}
     return DEMO_FUNDED_NAME not in names or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
@@ -824,11 +825,11 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
     user_id = user["id"]
     records = sample_trades(through)
     existing = db.sample_count(conn, user_id, DEMO_NOTE)
-    unplanned = _demo_trades_without_plan(conn, user_id)
+    to_update = _demo_trades_to_update(conn, user_id)
     accounts = db.accounts(conn, user_id)
     legacy = next((row for row in accounts if row["name"] in FORMER_DEMO_PROP_NAMES), None)
     has_funded = any(row["name"] == DEMO_FUNDED_NAME for row in accounts)
-    if existing >= len(records) and legacy is None and has_funded and not unplanned:
+    if existing >= len(records) and legacy is None and has_funded and not to_update:
         return
     if not existing:
         for trade in db.trades(conn, user["id"]):
@@ -861,13 +862,38 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
             (CHALLENGE_START.isoformat(), (CHALLENGE_END + timedelta(days=1)).isoformat(),
              prop_id, personal_id, user_id, DEMO_NOTE),
         )
-    for trade in unplanned:
-        plan = demo_trade_plan(
-            trade["instrument"], trade["direction"], trade["avg_entry"], trade["qty_entered"],
-            parse_iso(trade["opened_at"]).astimezone(NY), trade["net_pnl"],
-        )
-        db.update_trade(conn, user_id, trade["id"], plan)
-    checks = [{"item_id": item["id"], "checked": 1} for item in db.checklist(conn, user["id"]) if item["active"]]
+    checklist = [item for item in db.checklist(conn, user_id) if item["active"]]
+    events = db.news_events(conn)
+
+    def checks_for(opened_at: str) -> list[dict]:
+        near_news = news_near(opened_at, events, user["news_window_minutes"])
+        return [
+            {"item_id": item["id"], "checked": int(not near_news or item["label"] != "No high-impact news inside my window")}
+            for item in checklist
+        ]
+
+    for trade in to_update:
+        fields = {}
+        if trade["target"] is None or trade["planned_r"] != 2:
+            fields.update(demo_trade_plan(
+                trade["instrument"], trade["direction"], trade["avg_entry"], trade["qty_entered"],
+                parse_iso(trade["opened_at"]).astimezone(NY), trade["net_pnl"],
+            ))
+        if not trade["htf_bias"]:
+            ict, tags = demo_ict_context(
+                trade["setup"], trade["direction"], fields.get("stop", trade["stop"]), fields.get("target", trade["target"]),
+            )
+            fields.update(ict)
+            conn.executemany(
+                "INSERT INTO trade_tags (trade_id, tag) VALUES (?, ?) ON CONFLICT (trade_id, tag) DO NOTHING",
+                [(trade["id"], tag) for tag in tags],
+            )
+            conn.executemany(
+                """INSERT INTO trade_checks (trade_id, item_id, checked) VALUES (?, ?, ?)
+                   ON CONFLICT (trade_id, item_id) DO UPDATE SET checked = excluded.checked""",
+                [(trade["id"], row["item_id"], row["checked"]) for row in checks_for(trade["opened_at"])],
+            )
+        db.update_trade(conn, user_id, trade["id"], fields)
     for record in records[existing:]:
         moment = datetime.fromisoformat(record["opened_at"]).replace(tzinfo=NY)
         closed = datetime.fromisoformat(record["closed_at"]).replace(tzinfo=NY)
@@ -882,11 +908,10 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
             setup=record["setup"], grade=record["grade"], notes=DEMO_NOTE,
             emotion_before=record["emotion_before"], emotion_after="Reflective",
             followed_plan=record["followed_plan"],
-            lesson="Wait for confirmation at the level. Review execution after the session.",
+            **record["ict"],
         )
-        save_trade(conn, user["id"], {"trade": fields, "legs": leg_rows,
-                   "tags": ["FVG"] if record["setup"] == "Fair value gap" else [],
-                   "mistakes": [], "checks": checks})
+        save_trade(conn, user_id, {"trade": fields, "legs": leg_rows,
+                   "tags": record["tags"], "mistakes": [], "checks": checks_for(fields["opened_at"])})
 
 
 def finish_onboarding(conn, user: dict, form) -> None:

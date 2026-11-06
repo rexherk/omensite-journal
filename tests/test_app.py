@@ -337,6 +337,37 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(fill_history(conn, user_id), history)
                 self.assertTrue(all(t["planned_r"] == 2.0 for t in db.trades(conn, user_id)))
 
+    def test_existing_demo_session_backfills_ict_context_without_replacing_fills(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, sample_through
+
+        with patch("app.main.sample_through", return_value=sample_through()):
+            self.client.get("/demo").raise_for_status()
+            with db.session() as conn:
+                user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                trade = next(row for row in db.trades(conn, user_id)
+                             if row["setup"] == "Liquidity sweep" and row["direction"] == "short")
+                trade_id = trade["id"]
+                legs = db.legs(conn, trade_id)
+                conn.execute("UPDATE trades SET htf_bias = '', draw = '', lesson = '' WHERE id = ?", (trade_id,))
+                conn.execute("DELETE FROM trade_tags WHERE trade_id = ?", (trade_id,))
+
+            for _ in range(2):
+                page = self.client.get(f"/trades/{trade_id}")
+                self.assertEqual(page.status_code, 200)
+                self.assertIn("<dt>Entry time</dt><dd><time", page.text)
+                self.assertIn("<dt>Exit time</dt><dd><time", page.text)
+                self.assertNotIn("<dt>Average entry</dt>", page.text)
+                self.assertNotIn("<dt>Average exit</dt>", page.text)
+                self.assertNotIn("review-chart-fills", page.text)
+                self.assertIn("Simulated setup.", page.text)
+                self.assertIn("Buy-side liquidity sweep", page.text)
+            with db.session() as conn:
+                self.assertEqual(db.trade(conn, user_id, trade_id), trade)
+                self.assertEqual(db.legs(conn, trade_id), legs)
+                self.assertCountEqual(db.tags_for_user(conn, user_id)[trade_id],
+                                      ["Buy-side liquidity sweep", "MSS", "FVG"])
+
     def test_topstep_demo_challenge_migrates_and_passes(self):
         from collections import defaultdict
         from app import db
@@ -522,7 +553,7 @@ class AppTests(unittest.TestCase):
                 ("exit", "1", "5810", "2026-10-21T11:20"),
             ],
         )
-        self.assertIn("Still open", page.text)
+        self.assertIn("<dt>Exit time</dt><dd>Still open</dd>", page.text)
         self.assertIn("$50.00", page.text)
 
     def test_news_flags_housing_and_permits(self):

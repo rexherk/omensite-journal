@@ -100,14 +100,22 @@
 .trade-review dl { margin: 0; }
 .trade-review dt { color: var(--oj-muted); }
 .trade-review dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.trade-review .review-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem 1.6rem;
+  margin-top: .85rem;
+}
+.trade-review .review-times dt { color: #eec59f; font-size: .74rem; }
+.review-times dd { font-size: .86rem; }
 .trade-review .review-quick-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .75rem;
   margin-top: .9rem;
 }
-.review-quick-stats dt, .review-chart-fills dt { font-size: .75rem; }
-.review-quick-stats dd, .review-chart-fills dd { margin-top: .16rem; font-size: .9rem; }
+.review-quick-stats dt { font-size: .75rem; }
+.review-quick-stats dd { margin-top: .16rem; font-size: .9rem; }
 .review-section {
   margin-top: .95rem;
   padding-top: .9rem;
@@ -158,16 +166,6 @@
 .review-chart-message svg { width: 2.5rem; height: 2.5rem; color: #e4ad7c; }
 .review-chart-message h3 { margin: .55rem 0 .35rem; font-size: 1.2rem; }
 .review-chart-message p { margin: 0; color: #e1cdd9; font-size: .85rem; line-height: 1.55; }
-.trade-review .review-chart-fills {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .65rem;
-  margin-top: .85rem;
-  padding: .8rem .85rem;
-  border: 1px solid var(--oj-line);
-  border-radius: 7px;
-  background: var(--oj-secondary-soft);
-}
 .trade-review .review-notes { margin-top: .65rem; }
 .review-notes > div { padding: .75rem 0; border-bottom: 1px solid var(--oj-line); }
 .review-notes > div:last-child { border-bottom: 0; }
@@ -185,5 +183,4 @@
   .review-head { align-items: flex-start; }
   .review-tabs button { min-height: 44px; }
   .review-chart-empty { min-height: 16rem; }
-  .trade-review .review-chart-fills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

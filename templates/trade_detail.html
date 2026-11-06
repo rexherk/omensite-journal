@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ trade.instrument }} · Omensite Journal{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/css/trade-review.css?v=1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/trade-review.css?v=2">{% endblock %}
 {% block body %}
 <article class="trade-review" data-shot-action="/trades/{{ trade.id }}/shots">
   <header class="review-head">
@@ -11,7 +11,11 @@
         <h1>{{ trade.instrument }}</h1>
         <span class="review-direction">{{ trade.direction | title }}</span>
       </div>
-      <p class="review-meta">{{ trade.account_name }} · {{ "Futures" if trade.asset_class == "future" else trade.asset_class | title }} · <time datetime="{{ trade.opened_at }}">{{ when }}</time></p>
+      <p class="review-meta">{{ trade.account_name }} · {{ "Futures" if trade.asset_class == "future" else trade.asset_class | title }}</p>
+      <dl class="review-times">
+        <div><dt>Entry time</dt><dd><time datetime="{{ trade.opened_at }}">{{ when }}</time></dd></div>
+        <div><dt>Exit time</dt><dd>{% if trade.closed_at %}<time datetime="{{ trade.closed_at }}">{{ closed_label }}</time>{% else %}Still open{% endif %}</dd></div>
+      </dl>
     </div>
     <div class="review-actions">
       <span class="review-status">{{ "Closed" if trade.is_closed else "Still open" }}</span>
@@ -114,8 +118,6 @@
           <div><dt>Size in</dt><dd>{{ trade.qty_entered | plain }}</dd></div>
           <div><dt>Size out</dt><dd>{{ trade.qty_exited | plain }}</dd></div>
           <div><dt>Open size</dt><dd>{{ trade.open_qty | plain }}</dd></div>
-          <div><dt>Average entry</dt><dd>{{ trade.avg_entry | plain or "—" }}</dd></div>
-          <div><dt>Average exit</dt><dd>{{ trade.avg_exit | plain or "—" }}</dd></div>
         </dl>
         <div class="scroll review-fill-table" role="region" aria-label="Recorded fills" tabindex="0">
           <table>
@@ -160,11 +162,6 @@
             <p>Trade chart data will appear here when available. Saved screenshots are in Attachments.</p>
           </div>
         </div>
-        <dl class="review-chart-fills">
-          <div><dt>Average entry</dt><dd>{{ trade.avg_entry | plain or "—" }}</dd></div>
-          <div><dt>Average exit</dt><dd>{{ trade.avg_exit | plain or "—" }}</dd></div>
-          <div><dt>Closed</dt><dd>{{ closed_label if trade.closed_at else "Open" }}</dd></div>
-        </dl>
       </div>
 
       <div id="trade-notes" class="review-panel" data-tab-panel="review">
