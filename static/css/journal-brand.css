@@ -91,14 +91,6 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .notice{background:var(--oj-secondary-soft);border-color:var(--oj-line);color:var(--oj-secondary)}.error{background:var(--oj-loss-soft);border-color:var(--oj-loss-mid);color:var(--oj-loss)}
 .top .website-link{margin-left:auto}
 
-.trades-heading {
-  display: flex;
-  align-items: baseline;
-  gap: 1.5rem;
-  margin: .6rem 0 1.5rem;
-}
-.trades-heading h1 { margin: 0; }
-.trades-heading p { max-width: 62ch; margin: 0; line-height: 1.6; }
 .trade-filters {
   align-items: end;
   gap: .9rem;
@@ -114,7 +106,21 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .trade-history tbody tr:last-child td { border-bottom: 0; }
 .trade-history .num { white-space: nowrap; }
 .trade-history .trade-market { min-width: 10rem; }
-.trade-history .trade-market > a { font-weight: 600; }
+.trade-market-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+.trade-market .trade-symbol { font-weight: 600; }
+.trade-market .trade-view {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: .35rem .65rem;
+  font-size: .85rem;
+  white-space: nowrap;
+}
 .trade-history .trade-side { min-width: 9rem; }
 .trade-badges {
   display: flex;
@@ -126,8 +132,8 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .trade-badges .tag, .trade-badges .pill-tag { margin: 0; }
 .trade-history > p { margin: .25rem 0; }
 @media (max-width: 600px) {
-  .trades-heading { flex-direction: column; gap: .5rem; }
   .trade-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trade-market .trade-view { min-height: 44px; }
 }
 
 @media(max-width:700px){.dashboard-details .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.dashboard-details .stat{min-width:0}.page-head{flex-wrap:wrap}.page-head .actions{width:100%}.page-head .actions .button{font-size:10px;padding:10px 12px}.overview-month a{font-size:13px}.demo-banner-actions{width:100%;justify-content:space-between}.dashboard-details .stats .stat>strong{font-size:21px}}

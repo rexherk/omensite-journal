@@ -1,10 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Trades · Omensite Journal{% endblock %}
 {% block body %}
-<header class="trades-heading">
-  <h1>Trades</h1>
-  <p class="muted">Filter your trade history by market, session, side, grade, or account. Select a market symbol to open the trade and review its details.</p>
-</header>
+<h1>Trades</h1>
+<p class="muted">Filter your trade history by market, session, side, grade, or account. Choose View trade to review a trade’s details.</p>
 <form class="filters panel trade-filters" method="get" action="/trades" aria-label="Filter trades">
   <label>Instrument
     <select name="instrument">
@@ -69,7 +67,10 @@
       <tr>
         <td><time datetime="{{ trade.opened_at }}">{{ trade.when }}</time></td>
         <td class="trade-market">
-          <a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a>
+          <div class="trade-market-line">
+            <a class="trade-symbol" href="/trades/{{ trade.id }}">{{ trade.instrument }}</a>
+            <a class="button ghost trade-view" href="/trades/{{ trade.id }}" aria-label="View trade for {{ trade.instrument }} opened {{ trade.when }}">View trade</a>
+          </div>
           <div class="trade-badges">
             {% for tag in trade.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
             {% if trade.news %}<span class="tag news">News</span>{% endif %}
