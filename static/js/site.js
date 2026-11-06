@@ -82,19 +82,24 @@
 
   document.querySelectorAll("[data-tabs]").forEach(function (bar) {
     var root = bar.parentElement;
+    var buttons = bar.querySelectorAll("[data-tab]");
+    var initial = bar.querySelector("[data-tab].on") || buttons[0];
+    if (!initial) return;
     function show(name) {
-      bar.querySelectorAll("[data-tab]").forEach(function (button) {
-        button.classList.toggle("on", button.getAttribute("data-tab") === name);
+      buttons.forEach(function (button) {
+        var selected = button.getAttribute("data-tab") === name;
+        button.classList.toggle("on", selected);
+        button.setAttribute("aria-pressed", String(selected));
       });
       root.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
         panel.hidden = panel.getAttribute("data-tab-panel") !== name;
       });
       window.dispatchEvent(new Event("resize"));
     }
-    bar.querySelectorAll("[data-tab]").forEach(function (button) {
+    buttons.forEach(function (button) {
       button.addEventListener("click", function () { show(button.getAttribute("data-tab")); });
     });
-    show("overview");
+    show(initial.getAttribute("data-tab"));
   });
 
   var card = document.querySelector(".login-card");

@@ -1,0 +1,45 @@
+  <section class="review-attachments">
+    {% for slot in slots %}
+    <article class="panel" data-slot="{{ slot.key }}">
+      <h2>{{ slot.label }}</h2>
+      {% if slot.shot %}
+      <div class="mark" data-save="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/markup" data-csrf="{{ csrf }}">
+        <div class="chart-wrap">
+          <img src="/media/{{ slot.shot.id }}" alt="{{ slot.label }} chart">
+          <canvas data-shapes="{{ slot.shot.markup_json }}"></canvas>
+        </div>
+        <div class="tools">
+          <button type="button" data-tool="arrow" class="on">Arrow</button>
+          <button type="button" data-tool="box">Box</button>
+          <button type="button" data-tool="line">Line</button>
+          <button type="button" data-tool="text">Text</button>
+          {% for color in markup_colors %}
+          <button type="button" class="swatch {% if loop.first %}on{% endif %}" data-color="{{ color }}" style="background: {{ color }}" aria-label="Markup color {{ color }}"></button>
+          {% endfor %}
+          <button type="button" class="ghost" data-undo>Undo</button>
+          <button type="button" class="ghost" data-clear>Clear</button>
+          <button type="button" data-save-markup>Save markup</button>
+        </div>
+        <p class="markup-status muted"></p>
+      </div>
+      <form method="post" action="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/delete">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="ghost" type="submit">Remove image</button>
+      </form>
+      {% else %}
+      <p class="muted">No screenshot attached.</p>
+      {% endif %}
+      <form method="post" action="/trades/{{ trade.id }}/shots" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="slot" value="{{ slot.key }}">
+        <label>Chart image<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+        <div class="actions">
+          <button type="submit">Upload</button>
+          <button type="button" class="ghost" data-capture="{{ slot.key }}">Capture screen</button>
+        </div>
+        <p class="capture-error muted"></p>
+      </form>
+      <p class="muted">Paste with Ctrl+V while this card is under the pointer, or drop an image on it.</p>
+    </article>
+    {% endfor %}
+  </section>

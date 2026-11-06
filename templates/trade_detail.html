@@ -1,149 +1,195 @@
 {% extends "base.html" %}
 {% block title %}{{ trade.instrument }} · Omensite Journal{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/trade-review.css?v=1">{% endblock %}
 {% block body %}
-<div data-shot-action="/trades/{{ trade.id }}/shots">
-  <div class="actions">
-    <h1>{{ trade.instrument }} <span class="muted">{{ trade.direction }}</span></h1>
-    <a class="button" href="/trades/{{ trade.id }}/edit">Edit</a>
-    <form method="post" action="/trades/{{ trade.id }}/delete" onsubmit="return confirm('Delete this trade?');">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="danger" type="submit">Delete</button>
-    </form>
-  </div>
-  <p>{{ trade.account_name }} · {{ trade.asset_class }} {% if not trade.is_closed %}<span class="brass">Still open</span>{% endif %}</p>
+<article class="trade-review" data-shot-action="/trades/{{ trade.id }}/shots">
+  <header class="review-head">
+    <div>
+      <a class="review-back" href="/trades">← Trades</a>
+      <p class="review-kicker">Trade review</p>
+      <div class="review-title">
+        <h1>{{ trade.instrument }}</h1>
+        <span class="review-direction">{{ trade.direction | title }}</span>
+      </div>
+      <p class="review-meta">{{ trade.account_name }} · {{ "Futures" if trade.asset_class == "future" else trade.asset_class | title }} · <time datetime="{{ trade.opened_at }}">{{ when }}</time></p>
+    </div>
+    <div class="review-actions">
+      <span class="review-status">{{ "Closed" if trade.is_closed else "Still open" }}</span>
+      <a class="button" href="/trades/{{ trade.id }}/edit">Edit trade</a>
+      <form method="post" action="/trades/{{ trade.id }}/delete" onsubmit="return confirm('Delete this trade?');">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="ghost" type="submit">Delete</button>
+      </form>
+    </div>
+  </header>
+
   {% for item in news %}
   <p class="error">Opened {{ item.minutes }} minutes from {{ item.title }}.</p>
   {% endfor %}
   {% for warning in warnings %}<p class="error">{{ warning }}</p>{% endfor %}
 
-  <div class="detail-tabs" data-tabs>
-    <button type="button" data-tab="overview" class="on">Overview</button>
-    <button type="button" data-tab="chart">Chart</button>
-    <button type="button" data-tab="ict">ICT Analysis</button>
-    <button type="button" data-tab="psych">Psychology</button>
-  </div>
-
-  <div data-tab-panel="overview">
-  <section class="stats">
-    <div class="stat"><span>Net</span><strong class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</strong></div>
-    <div class="stat"><span>Gross</span><strong class="{{ trade.gross_pnl | pnl_class }}">{{ trade.gross_pnl | money }}</strong></div>
-    <div class="stat"><span>Points</span><strong>{{ trade.points | plain }}</strong></div>
-    <div class="stat"><span>Ticks</span><strong>{{ trade.ticks | plain }}</strong></div>
-    <div class="stat"><span>R:R</span><strong class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</strong></div>
-    <div class="stat"><span>Planned R:R</span><strong>{{ trade.planned_r | rmult }}</strong></div>
-    <div class="stat"><span>Risk</span><strong>{{ trade.risk_dollars | money }}</strong></div>
-    <div class="stat"><span>Hold</span><strong>{{ trade.hold_seconds | hold }}</strong></div>
-    <div class="stat"><span>MAE</span><strong>{{ trade.mae_dollars | money }}</strong></div>
-    <div class="stat"><span>MFE</span><strong>{{ trade.mfe_dollars | money }}</strong></div>
-    <div class="stat"><span>Left on table</span><strong>{{ trade.left_on_table | money }}</strong></div>
-    <div class="stat"><span>Grade</span><strong>{{ trade.grade or "—" }}{% if trade.auto_grade and trade.grade_manual %} <span class="muted">checklist {{ trade.auto_grade }}</span>{% endif %}</strong></div>
-  </section>
-
-  <section class="panel">
-    <h2>Fills</h2>
-    <p class="muted">Opened {{ when }}{% if trade.closed_at %} · Closed {{ closed_label }}{% endif %} · Size in {{ trade.qty_entered | plain }} · Out {{ trade.qty_exited | plain }} · Open {{ trade.open_qty | plain }}</p>
-    <p>Average entry {{ trade.avg_entry | plain }} · Average exit {{ trade.avg_exit | plain }} · Stop {{ trade.stop | plain }} · Target {{ trade.target | plain }} · Fees {{ trade.fees | money }}</p>
-    <table>
-      <tr><th>Kind</th><th>Size</th><th>Price</th><th>Time</th></tr>
-      {% for leg in legs %}
-      <tr><td>{{ leg.kind }}</td><td class="num">{{ leg.qty | plain }}</td><td class="num">{{ leg.price | plain }}</td><td>{{ leg.when }}</td></tr>
-      {% endfor %}
-    </table>
-  </section>
-  </div>
-
-  <div data-tab-panel="ict">
-  <section class="panel">
-    <h2>ICT</h2>
-    <p>Session {{ trade.session }} · Kill zone {{ trade.kill_zone }} · Macro {{ trade.macro_window }}</p>
-    <p>Bias {{ trade.htf_bias or "—" }} · Draw {{ trade.draw or "—" }} · {{ trade.premium or "Premium not set" }}</p>
-    {% if trade.range_high or trade.range_low %}<p>Dealing range {{ trade.range_low | plain }} to {{ trade.range_high | plain }}</p>{% endif %}
-    {% if trade.setup %}<p>Setup {{ trade.setup }}</p>{% endif %}
-    <p>{% for tag in tags %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No concept tags.</span>{% endfor %}</p>
-    <h3>Checklist</h3>
-    <ul>
-      {% for item in checks %}
-      <li>{{ "Yes" if item.checked else "No" }} — {{ item.label }}</li>
-      {% else %}
-      <li class="muted">No checklist answers on this trade.</li>
-      {% endfor %}
-    </ul>
-  </section>
-
-  </div>
-  <div data-tab-panel="psych">
-  <section class="panel two">
-    <div>
-      <h2>Psychology</h2>
-      <p>Before {{ trade.emotion_before or "—" }} · After {{ trade.emotion_after or "—" }}</p>
-      <p>Confidence {{ trade.confidence if trade.confidence is not none else "—" }}</p>
-      <p>Followed the plan {% if trade.followed_plan == 1 %}yes{% elif trade.followed_plan == 0 %}no{% else %}not answered{% endif %}</p>
-      <p>{% for tag in mistakes %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No mistake tags.</span>{% endfor %}</p>
-    </div>
-    <div>
-      <h2>Review</h2>
-      <p><strong>Right.</strong> {{ trade.went_right or "—" }}</p>
-      <p><strong>Wrong.</strong> {{ trade.went_wrong or "—" }}</p>
-      <p><strong>Lesson.</strong> {{ trade.lesson or "—" }}</p>
-      {% if trade.notes %}<p>{{ trade.notes }}</p>{% endif %}
-    </div>
-  </section>
-  </div>
-
-  <div data-tab-panel="chart">
-  <section class="slots">
-    {% for slot in slots %}
-    <article class="panel" data-slot="{{ slot.key }}">
-      <h2>{{ slot.label }}</h2>
-      {% if slot.shot %}
-      <div class="mark chart-wrap" data-save="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/markup" data-csrf="{{ csrf }}">
-        <img src="/media/{{ slot.shot.id }}" alt="{{ slot.label }} chart">
-        <canvas data-shapes="{{ slot.shot.markup_json }}"></canvas>
-        <div class="tools">
-          <button type="button" data-tool="arrow" class="on">Arrow</button>
-          <button type="button" data-tool="box">Box</button>
-          <button type="button" data-tool="line">Line</button>
-          <button type="button" data-tool="text">Text</button>
-          {% for color in markup_colors %}
-          <button type="button" class="swatch {% if loop.first %}on{% endif %}" data-color="{{ color }}" style="background: {{ color }}" aria-label="Markup color {{ color }}"></button>
-          {% endfor %}
-          <button type="button" class="ghost" data-undo>Undo</button>
-          <button type="button" class="ghost" data-clear>Clear</button>
-          <button type="button" data-save-markup>Save markup</button>
-        </div>
-        <p class="markup-status muted"></p>
+  <div class="review-layout">
+    <section class="review-pane review-summary" aria-label="Trade summary">
+      <div class="detail-tabs review-tabs" data-tabs role="group" aria-label="Trade summary views">
+        <button type="button" data-tab="stats" class="on" aria-controls="trade-stats">Stats</button>
+        <button type="button" data-tab="setup" aria-controls="trade-setup">Setup</button>
+        <button type="button" data-tab="fills" aria-controls="trade-fills">Fills</button>
       </div>
-      <form method="post" action="/trades/{{ trade.id }}/shots/{{ slot.shot.id }}/delete">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <button class="ghost" type="submit">Remove image</button>
-      </form>
-      {% else %}
-      <p class="muted">No chart in this slot yet.</p>
-      {% endif %}
-      <form method="post" action="/trades/{{ trade.id }}/shots" enctype="multipart/form-data">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <input type="hidden" name="slot" value="{{ slot.key }}">
-        <label>Upload<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp"></label>
-        <div class="actions">
-          <button type="submit">Upload</button>
-          <button type="button" class="ghost" data-capture="{{ slot.key }}">Capture screen</button>
-        </div>
-        <p class="capture-error muted"></p>
-      </form>
-      <p class="muted">Paste with Ctrl+V while this card is under the pointer, or drop an image on it.</p>
-    </article>
-    {% endfor %}
-  </section>
 
-  {% if embed %}
-  <section class="panel">
-    <h2>Chart</h2>
-    <p>Entry was {{ when }}. Scroll the widget back to that time. This is a live TradingView chart, not a replay.</p>
-    <p><a href="{{ embed.link }}" target="_blank" rel="noopener">Open {{ embed.symbol }} in TradingView</a></p>
-    <iframe title="TradingView chart" src="{{ embed.embed }}" width="100%" height="420" style="border:0"></iframe>
-  </section>
-  {% endif %}
+      <div id="trade-stats" class="review-panel" data-tab-panel="stats">
+        <div class="review-net">
+          <span>Net P&amp;L</span>
+          <strong class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</strong>
+          <small>{{ trade.fees | money }} in fees</small>
+        </div>
+        <dl class="review-quick-stats">
+          <div><dt>Gross P&amp;L</dt><dd class="{{ trade.gross_pnl | pnl_class }}">{{ trade.gross_pnl | money }}</dd></div>
+          <div><dt>Realized R:R</dt><dd class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</dd></div>
+          <div><dt>Size entered</dt><dd>{{ trade.qty_entered | plain }}</dd></div>
+          <div><dt>Hold time</dt><dd>{{ trade.hold_seconds | hold }}</dd></div>
+        </dl>
+        <section class="review-section">
+          <h2>Trade plan</h2>
+          <dl class="review-values">
+            <div><dt>Initial risk</dt><dd>{{ trade.risk_dollars | money }}</dd></div>
+            <div><dt>Planned R:R</dt><dd>{{ trade.planned_r | rmult }}</dd></div>
+            <div><dt>Stop price</dt><dd>{{ trade.stop | plain or "—" }}</dd></div>
+            <div><dt>Target price</dt><dd>{{ trade.target | plain or "—" }}</dd></div>
+          </dl>
+        </section>
+        <section class="review-section">
+          <h2>Price movement</h2>
+          <dl class="review-values">
+            <div><dt>Points</dt><dd>{{ trade.points | plain or "—" }}</dd></div>
+            <div><dt>Ticks</dt><dd>{{ trade.ticks | plain or "—" }}</dd></div>
+            <div><dt>MAE</dt><dd>{{ trade.mae_dollars | money }}</dd></div>
+            <div><dt>MFE</dt><dd>{{ trade.mfe_dollars | money }}</dd></div>
+            <div><dt>Left on table</dt><dd>{{ trade.left_on_table | money }}</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <div id="trade-setup" class="review-panel" data-tab-panel="setup">
+        <p class="review-kicker">Trade setup</p>
+        <h2 class="review-panel-title">{{ trade.setup or "Setup not recorded" }}</h2>
+        <dl class="review-values">
+          <div><dt>Grade</dt><dd>{{ trade.grade or "—" }}{% if trade.auto_grade and trade.grade_manual %} <small class="muted">Checklist {{ trade.auto_grade }}</small>{% endif %}</dd></div>
+          <div><dt>Session</dt><dd>{{ trade.session or "—" }}</dd></div>
+          <div><dt>Kill zone</dt><dd>{{ trade.kill_zone or "—" }}</dd></div>
+          <div><dt>Macro</dt><dd>{{ trade.macro_window or "—" }}</dd></div>
+          <div><dt>Bias</dt><dd>{{ trade.htf_bias or "—" }}</dd></div>
+          <div><dt>Draw on liquidity</dt><dd>{{ trade.draw or "—" }}</dd></div>
+          <div><dt>Premium / discount</dt><dd>{{ trade.premium or "—" }}</dd></div>
+          {% if trade.range_high or trade.range_low %}
+          <div><dt>Dealing range</dt><dd>{{ trade.range_low | plain or "—" }} to {{ trade.range_high | plain or "—" }}</dd></div>
+          {% endif %}
+        </dl>
+        <section class="review-section">
+          <h2>ICT concepts</h2>
+          <p class="review-tags">{% for tag in tags %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No concept tags.</span>{% endfor %}</p>
+        </section>
+        <section class="review-section">
+          <h2>Checklist</h2>
+          {% if checks %}
+          <ul class="review-checklist">
+            {% for item in checks %}<li><span class="muted">{{ "Yes" if item.checked else "No" }}</span>{{ item.label }}</li>{% endfor %}
+          </ul>
+          {% else %}
+          <p class="muted">No checklist answers on this trade.</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <div id="trade-fills" class="review-panel" data-tab-panel="fills">
+        <p class="review-kicker">Execution</p>
+        <h2 class="review-panel-title">Recorded fills</h2>
+        <dl class="review-values">
+          <div><dt>Opened</dt><dd>{{ when }}</dd></div>
+          <div><dt>Closed</dt><dd>{{ closed_label if trade.closed_at else "Open" }}</dd></div>
+          <div><dt>Size in</dt><dd>{{ trade.qty_entered | plain }}</dd></div>
+          <div><dt>Size out</dt><dd>{{ trade.qty_exited | plain }}</dd></div>
+          <div><dt>Open size</dt><dd>{{ trade.open_qty | plain }}</dd></div>
+          <div><dt>Average entry</dt><dd>{{ trade.avg_entry | plain or "—" }}</dd></div>
+          <div><dt>Average exit</dt><dd>{{ trade.avg_exit | plain or "—" }}</dd></div>
+        </dl>
+        <div class="scroll review-fill-table" role="region" aria-label="Recorded fills" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">Fill</th><th scope="col">Size</th><th scope="col">Price</th></tr></thead>
+            <tbody>
+              {% for leg in legs %}
+              <tr>
+                <td>{{ leg.kind | title }}<small class="muted">{{ leg.when }}</small></td>
+                <td class="num">{{ leg.qty | plain }}</td>
+                <td class="num">{{ leg.price | plain }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="review-pane review-workspace" aria-label="Trade review workspace">
+      <div class="detail-tabs review-tabs" data-tabs role="group" aria-label="Trade review views">
+        <button type="button" data-tab="chart" class="on" aria-controls="trade-chart">Chart</button>
+        <button type="button" data-tab="review" aria-controls="trade-notes">Review</button>
+        <button type="button" data-tab="attachments" aria-controls="trade-attachments">Attachments</button>
+      </div>
+
+      <div id="trade-chart" class="review-panel" data-tab-panel="chart">
+        <div class="review-workspace-head">
+          <div>
+            <p class="review-kicker">Price action</p>
+            <h2 class="review-panel-title">Chart workspace</h2>
+          </div>
+          {% if embed %}<a class="review-market-link" href="{{ embed.link }}" target="_blank" rel="noopener">Open in TradingView ↗</a>{% endif %}
+        </div>
+        <div class="review-chart-empty">
+          <span class="review-chart-symbol">{{ trade.instrument }}{% if trade.session %} · {{ trade.session }}{% endif %}</span>
+          <div class="review-chart-message">
+            <svg viewBox="0 0 40 40" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <rect x="4" y="5" width="32" height="28" rx="5"/>
+              <path d="M12 24v-7m8 9V12m8 11v-9M10 38h20" stroke-linecap="round"/>
+            </svg>
+            <h3>No trade chart yet</h3>
+            <p>Trade chart data will appear here when available. Saved screenshots are in Attachments.</p>
+          </div>
+        </div>
+        <dl class="review-chart-fills">
+          <div><dt>Average entry</dt><dd>{{ trade.avg_entry | plain or "—" }}</dd></div>
+          <div><dt>Average exit</dt><dd>{{ trade.avg_exit | plain or "—" }}</dd></div>
+          <div><dt>Closed</dt><dd>{{ closed_label if trade.closed_at else "Open" }}</dd></div>
+        </dl>
+      </div>
+
+      <div id="trade-notes" class="review-panel" data-tab-panel="review">
+        <p class="review-kicker">Post-trade reflection</p>
+        <h2 class="review-panel-title">Review notes</h2>
+        <dl class="review-notes">
+          <div><dt>What went right</dt><dd>{{ trade.went_right or "—" }}</dd></div>
+          <div><dt>What went wrong</dt><dd>{{ trade.went_wrong or "—" }}</dd></div>
+          <div><dt>Lesson</dt><dd>{{ trade.lesson or "—" }}</dd></div>
+          {% if trade.notes %}<div><dt>Additional notes</dt><dd>{{ trade.notes }}</dd></div>{% endif %}
+        </dl>
+        <section class="review-section">
+          <h2>Psychology</h2>
+          <dl class="review-values">
+            <div><dt>Before</dt><dd>{{ trade.emotion_before or "—" }}</dd></div>
+            <div><dt>After</dt><dd>{{ trade.emotion_after or "—" }}</dd></div>
+            <div><dt>Confidence</dt><dd>{{ trade.confidence if trade.confidence is not none else "—" }}</dd></div>
+            <div><dt>Followed the plan</dt><dd>{{ "Yes" if trade.followed_plan == 1 else "No" if trade.followed_plan == 0 else "Not answered" }}</dd></div>
+          </dl>
+          <p class="review-tags">{% for tag in mistakes %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">No mistake tags.</span>{% endfor %}</p>
+        </section>
+      </div>
+
+      <div id="trade-attachments" class="review-panel" data-tab-panel="attachments">
+        <p class="review-kicker">Chart screenshots</p>
+        <h2 class="review-panel-title">Attachments</h2>
+        {% include "partials/trade_attachments.html" %}
+      </div>
+    </section>
   </div>
-</div>
+</article>
 {% endblock %}
 {% block scripts %}<script src="/static/js/markup.js?v=raspberry-1"></script>{% endblock %}

@@ -1,0 +1,189 @@
+/* Trade review workspace */
+.review-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 1.7vw, 1.4rem);
+  border-radius: 12px;
+  background: radial-gradient(ellipse at top right, #782753, transparent 64%), var(--oj-ink);
+  color: var(--oj-surface);
+}
+.review-back {
+  display: inline-block;
+  margin-bottom: .75rem;
+  color: var(--oj-paper);
+  font-size: .85rem;
+}
+.review-kicker {
+  margin: 0 0 .4rem;
+  color: var(--oj-primary);
+  font: 600 .72rem var(--oj-mono);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.review-head .review-kicker { color: #eec59f; }
+.review-title, .review-actions, .review-workspace-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+.review-title h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+}
+.review-direction, .review-status {
+  padding: .3rem .62rem;
+  border: 1px solid #fffdf743;
+  border-radius: 5px;
+  color: var(--oj-paper);
+  font-size: .78rem;
+}
+.review-meta {
+  margin: .7rem 0 0;
+  color: #f0dfe7;
+  font-size: .86rem;
+  overflow-wrap: anywhere;
+}
+.review-actions .button, .review-actions button { font-size: .85rem; }
+.review-actions button.ghost {
+  color: var(--oj-paper);
+  background: transparent;
+  border-color: #fffdf743;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 28%) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+.review-pane {
+  min-width: 0;
+  border: 1px solid var(--oj-line);
+  border-radius: 10px;
+  background: var(--oj-surface);
+}
+.review-tabs {
+  gap: .35rem;
+  margin: 0;
+  padding: .65rem .75rem;
+  border-bottom: 1px solid var(--oj-line);
+}
+.review-tabs button { min-height: 36px; }
+.review-tabs button.on {
+  border-color: var(--oj-secondary);
+  background: var(--oj-secondary);
+  color: var(--oj-on-primary);
+}
+.review-panel { padding: 1rem; overflow-wrap: anywhere; }
+.review-panel-title { margin: 0; font-size: 1.22rem; }
+.review-net {
+  display: grid;
+  gap: .25rem;
+  padding: .8rem .9rem;
+  border-inline-start: 3px solid var(--oj-primary);
+  border-radius: 0 7px 7px 0;
+  background: var(--oj-primary-soft);
+}
+.review-net > span { color: var(--oj-muted); font-size: .8rem; }
+.review-net strong {
+  font: 650 clamp(1.65rem, 2.5vw, 2.4rem)/1.12 var(--oj-heading);
+  font-variant-numeric: tabular-nums;
+}
+.review-net small { color: var(--oj-muted); font-size: .75rem; }
+.trade-review dl { margin: 0; }
+.trade-review dt { color: var(--oj-muted); }
+.trade-review dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.trade-review .review-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: .9rem;
+}
+.review-quick-stats dt, .review-chart-fills dt { font-size: .75rem; }
+.review-quick-stats dd, .review-chart-fills dd { margin-top: .16rem; font-size: .9rem; }
+.review-section {
+  margin-top: .95rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--oj-line);
+}
+.review-section h2 { margin-bottom: .35rem; }
+.review-values > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .6rem;
+  padding: .24rem 0;
+  font-size: .82rem;
+}
+.review-values dd { text-align: right; }
+.review-panel-title + .review-values { margin-top: .7rem; }
+.review-tags { margin: .55rem 0 0; }
+.review-checklist { margin: 0; padding: 0; list-style: none; }
+.review-checklist li { display: flex; align-items: baseline; gap: .5rem; padding: .35rem 0; font-size: .82rem; }
+.review-checklist li span { min-width: 1.55rem; }
+.review-fill-table { margin-top: .8rem; }
+.review-fill-table table { font-size: .82rem; }
+.review-fill-table small { display: block; font-size: .72rem; }
+
+.review-workspace-head { justify-content: space-between; margin-bottom: .85rem; }
+.review-market-link { font-size: .79rem; }
+.review-chart-empty {
+  position: relative;
+  display: grid;
+  min-height: clamp(19rem, 46vh, 34rem);
+  place-items: center;
+  padding: 3rem 1rem;
+  border: 1px solid #58344d;
+  border-radius: 8px;
+  background:
+    linear-gradient(#fffdf70b 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, #fffdf70b 1px, transparent 1px) 0 0 / 44px 44px,
+    radial-gradient(ellipse at 50% 42%, #442039, #24121f 75%);
+  color: var(--oj-surface);
+}
+.review-chart-symbol {
+  position: absolute;
+  top: .75rem;
+  left: .8rem;
+  color: #e1cdd9;
+  font: 600 .72rem var(--oj-mono);
+}
+.review-chart-message { max-width: 18rem; text-align: center; }
+.review-chart-message svg { width: 2.5rem; height: 2.5rem; color: #e4ad7c; }
+.review-chart-message h3 { margin: .55rem 0 .35rem; font-size: 1.2rem; }
+.review-chart-message p { margin: 0; color: #e1cdd9; font-size: .85rem; line-height: 1.55; }
+.trade-review .review-chart-fills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+  margin-top: .85rem;
+  padding: .8rem .85rem;
+  border: 1px solid var(--oj-line);
+  border-radius: 7px;
+  background: var(--oj-secondary-soft);
+}
+.trade-review .review-notes { margin-top: .65rem; }
+.review-notes > div { padding: .75rem 0; border-bottom: 1px solid var(--oj-line); }
+.review-notes > div:last-child { border-bottom: 0; }
+.review-notes dt { font-size: .8rem; font-weight: 600; }
+.review-notes dd { margin-top: .25rem; font-weight: 400; white-space: pre-wrap; }
+.review-attachments { display: grid; gap: .8rem; margin-top: .8rem; }
+.review-attachments .panel { margin: 0; min-width: 0; }
+.review-attachments .tools button { font-size: .78rem; }
+.review-attachments form + form { margin-top: .8rem; }
+
+@media (max-width: 1020px) {
+  .review-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .review-head { align-items: flex-start; }
+  .review-tabs button { min-height: 44px; }
+  .review-chart-empty { min-height: 16rem; }
+  .trade-review .review-chart-fills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
