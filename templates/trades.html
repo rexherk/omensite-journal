@@ -65,12 +65,12 @@
       <tbody>
       {% for trade in trades %}
       <tr>
-        <td><time datetime="{{ trade.opened_at }}">{{ trade.when }}</time></td>
+        <td class="trade-opened">
+          <time datetime="{{ trade.opened_at }}">{{ trade.when }}</time>
+          <a class="button ghost trade-view" href="/trades/{{ trade.id }}" aria-label="View trade for {{ trade.instrument }} opened {{ trade.when }}">View trade</a>
+        </td>
         <td class="trade-market">
-          <div class="trade-market-line">
-            <a class="trade-symbol" href="/trades/{{ trade.id }}">{{ trade.instrument }}</a>
-            <a class="button ghost trade-view" href="/trades/{{ trade.id }}" aria-label="View trade for {{ trade.instrument }} opened {{ trade.when }}">View trade</a>
-          </div>
+          <span class="trade-symbol">{{ trade.instrument }}</span>
           <div class="trade-badges">
             {% for tag in trade.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
             {% if trade.news %}<span class="tag news">News</span>{% endif %}
