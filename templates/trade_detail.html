@@ -52,9 +52,15 @@
           <h2>Trade plan</h2>
           <dl class="review-values">
             <div><dt>Initial risk</dt><dd>{{ trade.risk_dollars | money }}</dd></div>
-            <div><dt>Planned R:R</dt><dd>{{ trade.planned_r | rmult }}</dd></div>
-            <div><dt>Stop price</dt><dd>{{ trade.stop | plain or "—" }}</dd></div>
-            <div><dt>Target price</dt><dd>{{ trade.target | plain or "—" }}</dd></div>
+            <div><dt>Planned R:R</dt><dd>{{ (trade.planned_r | plain) ~ ":1" if trade.planned_r is not none else "—" }}</dd></div>
+            <div>
+              <dt>Stop price</dt>
+              <dd>{{ trade.stop | plain or "—" }}{% if trade.stop is not none and trade.avg_entry is not none %} <small class="muted">· {{ (trade.avg_entry - trade.stop) | abs | plain }} pts</small>{% endif %}</dd>
+            </div>
+            <div>
+              <dt>Target price</dt>
+              <dd>{{ trade.target | plain or "—" }}{% if trade.target is not none and trade.avg_entry is not none %} <small class="muted">· {{ (trade.target - trade.avg_entry) | abs | plain }} pts</small>{% endif %}</dd>
+            </div>
           </dl>
         </section>
         <section class="review-section">
@@ -64,7 +70,6 @@
             <div><dt>Ticks</dt><dd>{{ trade.ticks | plain or "—" }}</dd></div>
             <div><dt>MAE</dt><dd>{{ trade.mae_dollars | money }}</dd></div>
             <div><dt>MFE</dt><dd>{{ trade.mfe_dollars | money }}</dd></div>
-            <div><dt>Left on table</dt><dd>{{ trade.left_on_table | money }}</dd></div>
           </dl>
         </section>
       </div>

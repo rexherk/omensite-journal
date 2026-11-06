@@ -41,7 +41,7 @@ from app.paths import import_dir, upload_path
 from app.present import equity_svg
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_NOTE, DEMO_PROP,
-    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, sample_trades,
+    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, demo_trade_plan, sample_trades,
 )
 from app.services_error import JournalError
 from app import db
@@ -791,8 +791,18 @@ def complete_reset(conn, token: str, password: str) -> None:
     db.delete_reset(conn, token)
 
 
+def _demo_trades_without_plan(conn, user_id: int) -> list[dict]:
+    return db.many(
+        conn,
+        """SELECT id, instrument, direction, avg_entry, qty_entered, opened_at, net_pnl
+           FROM trades WHERE user_id = ? AND notes = ?
+           AND (target IS NULL OR planned_r IS NULL OR planned_r <> 2)""",
+        (user_id, DEMO_NOTE),
+    )
+
+
 def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
-    if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)):
+    if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)) or _demo_trades_without_plan(conn, user_id):
         return True
     names = {row["name"] for row in db.accounts(conn, user_id)}
     return DEMO_FUNDED_NAME not in names or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
@@ -814,10 +824,11 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
     user_id = user["id"]
     records = sample_trades(through)
     existing = db.sample_count(conn, user_id, DEMO_NOTE)
+    unplanned = _demo_trades_without_plan(conn, user_id)
     accounts = db.accounts(conn, user_id)
     legacy = next((row for row in accounts if row["name"] in FORMER_DEMO_PROP_NAMES), None)
     has_funded = any(row["name"] == DEMO_FUNDED_NAME for row in accounts)
-    if existing >= len(records) and legacy is None and has_funded:
+    if existing >= len(records) and legacy is None and has_funded and not unplanned:
         return
     if not existing:
         for trade in db.trades(conn, user["id"]):
@@ -850,6 +861,12 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
             (CHALLENGE_START.isoformat(), (CHALLENGE_END + timedelta(days=1)).isoformat(),
              prop_id, personal_id, user_id, DEMO_NOTE),
         )
+    for trade in unplanned:
+        plan = demo_trade_plan(
+            trade["instrument"], trade["direction"], trade["avg_entry"], trade["qty_entered"],
+            parse_iso(trade["opened_at"]).astimezone(NY), trade["net_pnl"],
+        )
+        db.update_trade(conn, user_id, trade["id"], plan)
     checks = [{"item_id": item["id"], "checked": 1} for item in db.checklist(conn, user["id"]) if item["active"]]
     for record in records[existing:]:
         moment = datetime.fromisoformat(record["opened_at"]).replace(tzinfo=NY)
@@ -859,7 +876,7 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
         fields, leg_rows = compose(
             zone=user_zone(user), instrument=record["instrument"], asset_class="future",
             direction=record["direction"], fees=record["fees"], legs=legs,
-            stop=record["stop"],
+            stop=record["stop"], target=record["target"],
             account_id=prop_id if record["is_prop"] else personal_id,
             session=record["session"], kill_zone=record["kill_zone"],
             setup=record["setup"], grade=record["grade"], notes=DEMO_NOTE,

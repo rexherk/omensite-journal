@@ -91,6 +91,29 @@ def sample_trades(through: date | None = None) -> tuple[dict, ...]:
     return _sample_trades(through or sample_through())
 
 
+def demo_trade_plan(instrument: str, direction: str, entry: float, qty: float,
+                    opened: datetime, net_pnl: float) -> dict[str, float]:
+    """Build a 2:1 plan from the entry without changing the simulated fills."""
+    spec = FUTURES[instrument]
+    dollars_per_point = qty * spec.point_value
+    if instrument in {"MES", "MNQ"}:
+        # The two requested ranges overlap at 20–30 stop points for an exact 2:1 plan.
+        minute = opened.hour * 60 + opened.minute
+        stop_points = 20 + (opened.toordinal() + minute) % 11
+    else:
+        stop_ticks = max(1, round(250 / (dollars_per_point * spec.tick)))
+        stop_points = stop_ticks * spec.tick
+    sign = 1 if direction == "long" else -1
+    risk = stop_points * dollars_per_point
+    return {
+        "stop": entry - sign * stop_points,
+        "target": entry + sign * 2 * stop_points,
+        "risk_dollars": round(risk, 2),
+        "planned_r": 2.0,
+        "r_multiple": round(net_pnl / risk, 4),
+    }
+
+
 @lru_cache(maxsize=2)
 def _sample_trades(through: date) -> tuple[dict, ...]:
     records = []
@@ -108,15 +131,16 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
             direction = "short" if index % 3 == 1 else "long"
             exit_price = entry + gross / (qty * multiplier) * (-1 if direction == "short" else 1)
             stamp = f"{day.isoformat()}T{9 + slot // 2:02d}:{35 + (slot % 2) * 20:02d}:00"
+            opened = datetime.fromisoformat(stamp)
             net = gross - 4.5
             records.append({
                 "id": index + 1, "instrument": instrument, "qty": qty,
                 "is_prop": CHALLENGE_START <= day <= CHALLENGE_END,
                 "direction": direction, "entry": entry, "exit": exit_price,
                 "fees": 4.5, "is_closed": 1, "net_pnl": net,
-                "opened_at": stamp, "closed_at": (datetime.fromisoformat(stamp) + timedelta(minutes=18 + index % 29)).isoformat(),
-                "stop": entry + 250 / (qty * multiplier) * (1 if direction == "short" else -1),
-                "r_multiple": net / 250, "followed_plan": int(net > 0 or index % 4 != 0),
+                "opened_at": stamp, "closed_at": (opened + timedelta(minutes=18 + index % 29)).isoformat(),
+                **demo_trade_plan(instrument, direction, entry, qty, opened, net),
+                "followed_plan": int(net > 0 or index % 4 != 0),
                 "left_on_table": 0, "session": "NY AM", "kill_zone": "NY AM",
                 "grade": "A+" if net > 0 else "B", "emotion_before": "Calm" if net > 0 else "Anxious",
                 "setup": ("Opening range", "Liquidity sweep", "Fair value gap", "Break & retest")[index % 4],

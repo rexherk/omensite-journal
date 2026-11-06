@@ -282,16 +282,60 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(quantity, sum(leg["qty"] for leg in exits))
                 entry_value = sum(leg["price"] * leg["qty"] for leg in entries)
                 exit_value = sum(leg["price"] * leg["qty"] for leg in exits)
-                point_value = FUTURES[trade["instrument"]].point_value
+                spec = FUTURES[trade["instrument"]]
+                point_value = spec.point_value
                 sign = 1 if trade["direction"] == "long" else -1
                 gross = (exit_value - entry_value) * point_value * sign
                 net = gross - trade["fees"]
-                risk = abs(entry_value / quantity - trade["stop"]) * quantity * point_value
+                entry = entry_value / quantity
+                stop_points = (entry - trade["stop"]) * sign
+                target_points = (trade["target"] - entry) * sign
+                risk = stop_points * quantity * point_value
                 self.assertGreater(risk, 0)
+                self.assertEqual(target_points, 2 * stop_points)
+                self.assertEqual(trade["planned_r"], 2.0)
+                self.assertEqual(trade["stop"] % spec.tick, 0)
+                self.assertEqual(trade["target"] % spec.tick, 0)
+                if trade["instrument"] in {"MNQ", "MES"}:
+                    self.assertGreaterEqual(stop_points, 20)
+                    self.assertLessEqual(stop_points, 30)
                 self.assertAlmostEqual(trade["gross_pnl"], gross, places=2)
                 self.assertAlmostEqual(trade["net_pnl"], net, places=2)
                 self.assertAlmostEqual(trade["risk_dollars"], risk, places=2)
                 self.assertAlmostEqual(trade["r_multiple"], net / risk, places=4)
+
+    def test_existing_demo_trade_plans_backfill_in_place(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_NOTE, sample_through
+
+        plan_fields = {"stop", "target", "risk_dollars", "planned_r", "r_multiple"}
+
+        def fill_history(conn, user_id):
+            return {trade["id"]: (
+                {key: value for key, value in trade.items() if key not in plan_fields},
+                db.legs(conn, trade["id"]),
+            ) for trade in db.trades(conn, user_id)}
+
+        through = sample_through()
+        with patch("app.main.sample_through", return_value=through):
+            self.client.get("/demo").raise_for_status()
+            with db.session() as conn:
+                user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                conn.execute(
+                    "UPDATE trades SET target = NULL, planned_r = NULL WHERE user_id = ? AND notes = ?",
+                    (user_id, DEMO_NOTE),
+                )
+                history = fill_history(conn, user_id)
+                trade_id = next(iter(history))
+
+            # A visitor with an existing demo cookie sees the backfill even at the same cutoff.
+            page = self.client.get(f"/trades/{trade_id}")
+            self.assertEqual(page.status_code, 200)
+            self.assertIn("<dt>Planned R:R</dt><dd>2:1</dd>", page.text)
+            self.assertNotIn("<dt>Left on table</dt>", page.text)
+            with db.session() as conn:
+                self.assertEqual(fill_history(conn, user_id), history)
+                self.assertTrue(all(t["planned_r"] == 2.0 for t in db.trades(conn, user_id)))
 
     def test_topstep_demo_challenge_migrates_and_passes(self):
         from collections import defaultdict
