@@ -41,7 +41,8 @@ from app.paths import import_dir, upload_path
 from app.present import equity_svg
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_NOTE, DEMO_PROP,
-    FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, demo_challenge, demo_ict_context, demo_trade_plan, sample_trades,
+    DEMO_SECOND_COMBINE, FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, SECOND_COMBINE_START,
+    demo_challenge, demo_ict_context, demo_trade_plan, sample_trades,
 )
 from app.services_error import JournalError
 from app import db
@@ -806,7 +807,7 @@ def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
     if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)) or _demo_trades_to_update(conn, user_id):
         return True
     names = {row["name"] for row in db.accounts(conn, user_id)}
-    return DEMO_FUNDED_NAME not in names or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
+    return not {DEMO_FUNDED_NAME, DEMO_SECOND_COMBINE}.issubset(names) or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
 
 
 def open_demo(conn, through: date) -> int:
@@ -828,8 +829,10 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
     to_update = _demo_trades_to_update(conn, user_id)
     accounts = db.accounts(conn, user_id)
     legacy = next((row for row in accounts if row["name"] in FORMER_DEMO_PROP_NAMES), None)
-    has_funded = any(row["name"] == DEMO_FUNDED_NAME for row in accounts)
-    if existing >= len(records) and legacy is None and has_funded and not to_update:
+    account_ids = {row["name"]: row["id"] for row in accounts}
+    has_second = DEMO_SECOND_COMBINE in account_ids
+    has_funded = DEMO_FUNDED_NAME in account_ids
+    if existing >= len(records) and legacy is None and has_second and has_funded and not to_update:
         return
     if not existing:
         for trade in db.trades(conn, user["id"]):
@@ -837,30 +840,40 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
             if note == SAMPLE_NOTE or note.startswith(("Omensite demo v2 ", "Omensite demo v3 ")):
                 db.delete_trade(conn, user["id"], trade["id"])
     personal_id = next(row["id"] for row in accounts if row["kind"] == "personal")
-    prop_id = next((row["id"] for row in accounts if row["name"] == DEMO_PROP["name"]), None)
-    if legacy is not None and prop_id is None:
-        prop_id = legacy["id"]
+    first_combine = DEMO_PROP["name"]
+    if legacy is not None and first_combine not in account_ids:
+        account_ids[first_combine] = legacy["id"]
         conn.execute(
             "UPDATE accounts SET name = ?, profit_target = ? WHERE user_id = ? AND id = ?",
-            (DEMO_PROP["name"], DEMO_PROP["profit_target"], user_id, prop_id),
+            (first_combine, DEMO_PROP["profit_target"], user_id, legacy["id"]),
         )
-    if prop_id is None:
-        prop_id = db.insert_account(
-            conn, user["id"], DEMO_PROP["name"], DEMO_PROP["kind"], DEMO_PROP["starting_balance"],
-            DEMO_PROP["daily_loss_limit"], DEMO_PROP["trailing_drawdown"], DEMO_PROP["profit_target"],
-        )
+    for name in (first_combine, DEMO_SECOND_COMBINE):
+        if name not in account_ids:
+            account_ids[name] = db.insert_account(
+                conn, user_id, name, DEMO_PROP["kind"], DEMO_PROP["starting_balance"],
+                DEMO_PROP["daily_loss_limit"], DEMO_PROP["trailing_drawdown"], DEMO_PROP["profit_target"],
+            )
+            db.set_consistency(conn, user_id, account_ids[name], DEMO_PROP["consistency_pct"])
     if legacy is not None or not existing:
-        db.set_consistency(conn, user_id, prop_id, DEMO_PROP["consistency_pct"])
+        db.set_consistency(conn, user_id, account_ids[first_combine], DEMO_PROP["consistency_pct"])
     if not has_funded:
         db.insert_account(conn, user_id, DEMO_FUNDED_NAME, "prop", 0, None, None, None)
-    if legacy is not None and legacy["name"] == LEGACY_DEMO_PROP:
+    legacy_history = legacy is not None and legacy["name"] == LEGACY_DEMO_PROP
+    if legacy_history:
         # Reclassify the sample fills in place so their IDs and P&L stay stable.
         conn.execute(
             """UPDATE trades
                SET account_id = CASE WHEN closed_local >= ? AND closed_local < ? THEN ? ELSE ? END
                WHERE user_id = ? AND notes = ?""",
             (CHALLENGE_START.isoformat(), (CHALLENGE_END + timedelta(days=1)).isoformat(),
-             prop_id, personal_id, user_id, DEMO_NOTE),
+             account_ids[first_combine], personal_id, user_id, DEMO_NOTE),
+        )
+    if not has_second or legacy_history:
+        # The prior release may already have seeded launch-day trades into Personal.
+        conn.execute(
+            """UPDATE trades SET account_id = ?
+               WHERE user_id = ? AND notes = ? AND account_id = ? AND closed_day >= ?""",
+            (account_ids[DEMO_SECOND_COMBINE], user_id, DEMO_NOTE, personal_id, SECOND_COMBINE_START.isoformat()),
         )
     checklist = [item for item in db.checklist(conn, user_id) if item["active"]]
     events = db.news_events(conn)
@@ -903,7 +916,7 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
             zone=user_zone(user), instrument=record["instrument"], asset_class="future",
             direction=record["direction"], fees=record["fees"], legs=legs,
             stop=record["stop"], target=record["target"],
-            account_id=prop_id if record["is_prop"] else personal_id,
+            account_id=account_ids.get(record["combine"], personal_id),
             session=record["session"], kill_zone=record["kill_zone"],
             setup=record["setup"], grade=record["grade"], notes=DEMO_NOTE,
             emotion_before=record["emotion_before"], emotion_after="Reflective",
@@ -1025,6 +1038,8 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         for row in props:
             if row["account"]["name"] == DEMO_PROP["name"]:
                 row["challenge"] = demo_challenge(row)
+            elif row["account"]["name"] == DEMO_SECOND_COMBINE:
+                row["challenge"] = {"account_number": "704216XXXX", "passed_on": None}
             elif row["account"]["name"] == DEMO_FUNDED_NAME:
                 row["funded_placeholder"] = True
     else:

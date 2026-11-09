@@ -89,12 +89,29 @@
 </section>
 <section class="panel" id="prop-accounts">
   <h2>Prop accounts</h2>
+  {% if demo_mode %}
+  <form class="filters" method="get" action="/#prop-accounts">
+    <input type="hidden" name="range" value="all">
+    <label>Prop account
+      <select name="account">
+        <option value="">All accounts</option>
+        {% for account in accounts if account.kind == "prop" %}
+        <option value="{{ account.id }}" {% if account_filter == account.id|string %}selected{% endif %}>{{ account.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="ghost" type="submit">View account</button>
+  </form>
+  {% endif %}
   {% if props %}
     {% for row in props %}
     <article class="prop-card">
       <div class="panel-label">
         <h3>{{ row.account.name }}</h3>
-        {% if row.challenge and row.challenge.passed_on %}<span class="pill-tag good">Passed</span>{% endif %}
+        {% if row.challenge %}
+        {% if row.challenge.passed_on %}<span class="pill-tag good">Passed</span>
+        {% else %}<span class="pill-tag">In progress</span>{% endif %}
+        {% endif %}
       </div>
       {% if row.challenge %}
       <p class="muted">Simulated Trading Combine · Account {{ row.challenge.account_number }}{% if row.challenge.passed_on %} · Passed {{ row.challenge.passed_on.strftime('%b %d, %Y') }}{% endif %}</p>
@@ -130,8 +147,11 @@
       {% if row.daily_hit %}<p class="down">Daily loss limit is hit.</p>{% endif %}
       {% if row.trail_hit %}<p class="down">Trailing drawdown is hit.</p>{% endif %}
       {% endif %}
+      {% if row.challenge %}<p><a href="/trades?account={{ row.account.id }}">View trade history</a></p>{% endif %}
     </article>
     {% endfor %}
+  {% elif demo_mode %}
+  <p class="muted">Select a prop account to view its performance and trades.</p>
   {% else %}
   <p class="muted">Add a prop account in Settings to track a daily loss limit, trailing drawdown, and payout target.</p>
   {% endif %}

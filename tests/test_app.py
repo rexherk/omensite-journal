@@ -456,6 +456,53 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(demo.get("/demo").status_code, 200)
                 self.assertEqual(trade_ids(DEMO_NOTE), new_ids)
 
+    def test_second_demo_combine_preserves_and_filters_account_history(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_PROP, DEMO_SECOND_COMBINE, SECOND_COMBINE_START
+
+        with patch("app.main.sample_through", return_value=SECOND_COMBINE_START):
+            self.client.get("/demo").raise_for_status()
+            with db.session() as conn:
+                user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
+                original_id = accounts[DEMO_PROP["name"]]
+                rows = db.trades(conn, user_id)
+                launch = [row for row in rows if row["closed_day"] == SECOND_COMBINE_START.isoformat()]
+                self.assertEqual(len(launch), 4)
+                self.assertTrue(all(row["account_id"] == accounts[DEMO_SECOND_COMBINE] for row in launch))
+
+                # Recreate the old release's state after its launch-day refresh.
+                conn.execute("UPDATE trades SET account_id = ? WHERE user_id = ? AND account_id = ?",
+                             (accounts["Personal"], user_id, accounts[DEMO_SECOND_COMBINE]))
+                db.delete_account(conn, user_id, accounts[DEMO_SECOND_COMBINE])
+
+            previous = self.client.get("/", params={"account": original_id, "range": "all"}).raise_for_status().text
+            self.assertIn("Passed Oct 13, 2026", previous)
+            self.assertIn('data-net-pnl="3135.0"', previous)
+            self.assertIn(f'/trades?account={original_id}">View trade history', previous)
+            self.assertIn(f'>{DEMO_SECOND_COMBINE}</option>', previous)
+            self.assertEqual(self.client.get("/trades", params={"account": original_id}).text.count(
+                'class="button ghost trade-view"'), 20)
+
+            with db.session() as conn:
+                accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
+                restored = db.trades(conn, user_id)
+            self.assertEqual([row["id"] for row in restored], [row["id"] for row in rows])
+            self.assertEqual([row["net_pnl"] for row in restored], [row["net_pnl"] for row in rows])
+            self.assertFalse(any(row["account_id"] == accounts[DEMO_FUNDED_NAME] for row in restored))
+            second_id = accounts[DEMO_SECOND_COMBINE]
+            self.assertEqual({row["id"] for row in restored if row["account_id"] == second_id},
+                             {row["id"] for row in launch})
+            current = self.client.get("/", params={"account": second_id}).raise_for_status().text
+            self.assertIn('data-net-pnl="1869.5"', current)
+            self.assertIn("In progress", current)
+
+        with patch("app.main.sample_through", return_value=date(2026, 11, 10)):
+            self.client.get("/trades").raise_for_status()
+            with db.session() as conn:
+                new_rows = [row for row in db.trades(conn, user_id) if row["closed_day"] == "2026-11-10"]
+            self.assertEqual([row["account_id"] for row in new_rows], [second_id])
+
     def test_demo_funded_account_has_an_empty_calendar(self):
         from app import db
         from app.sample_data import DEMO_EMAIL, DEMO_FUNDED_NAME

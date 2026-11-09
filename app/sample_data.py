@@ -17,6 +17,8 @@ LEGACY_DEMO_PROP = "Sample Prop"
 FORMER_DEMO_PROP_NAMES = (LEGACY_DEMO_PROP, "TopstepX 50K account")
 CHALLENGE_START = date(2026, 10, 1)
 CHALLENGE_END = date(2026, 10, 13)
+SECOND_COMBINE_START = date(2026, 11, 9)
+DEMO_SECOND_COMBINE = "Topstep 50k Combine #2"
 DEMO_PROP = {
     "name": "Topstep 50k Combine",
     "kind": "prop",
@@ -158,6 +160,11 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
     records = []
     for offset in range((through - START).days + 1):
         day = START + timedelta(days=offset)
+        combine = None
+        if day >= SECOND_COMBINE_START:
+            combine = DEMO_SECOND_COMBINE
+        elif CHALLENGE_START <= day <= CHALLENGE_END:
+            combine = DEMO_PROP["name"]
         for slot, gross in enumerate(_session(day)):
             index = len(records)
             instrument, qty, entry = (
@@ -177,7 +184,7 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
             ict, tags = demo_ict_context(setup, direction, plan["stop"], plan["target"])
             records.append({
                 "id": index + 1, "instrument": instrument, "qty": qty,
-                "is_prop": CHALLENGE_START <= day <= CHALLENGE_END,
+                "combine": combine,
                 "direction": direction, "entry": entry, "exit": exit_price,
                 "fees": 4.5, "is_closed": 1, "net_pnl": net,
                 "opened_at": stamp, "closed_at": (opened + timedelta(minutes=18 + index % 29)).isoformat(),
@@ -206,7 +213,8 @@ def sample_overview(through: date | None = None) -> dict:
     recent = list(reversed(trades))
     review = next((trade for trade in recent if trade["setup"] == "Liquidity sweep"
                    and trade["direction"] == "long" and trade["net_pnl"] > 0), None)
-    prop = prop_rows([dict(DEMO_PROP, id=1)], [dict(trade, account_id=1) for trade in trades if trade["is_prop"]],
+    prop = prop_rows([dict(DEMO_PROP, id=1)],
+                     [dict(trade, account_id=1) for trade in trades if trade["combine"] == DEMO_PROP["name"]],
                      datetime.now(NY).date())[0]
     prop["challenge"] = demo_challenge(prop)
     return {"dash": board, "calendar": month_calendar(trades, month),
