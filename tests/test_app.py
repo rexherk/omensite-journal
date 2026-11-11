@@ -135,7 +135,7 @@ class AppTests(unittest.TestCase):
         self.assertIn('href="/demo"', intro.text)
         self.assertIn('role="tablist"', intro.text)
         self.assertIn("/static/js/landing.js", intro.text)
-        self.assertIn("Learn from Omen. Make better trades.", intro.text)
+        self.assertIn("Sign in with Discord to create your journal.", intro.text)
         self.assertNotIn("Get Access", intro.text)
         self.assertNotIn("Sign out", intro.text)
         self.client.cookies.set("omensite_session", self.session)
@@ -460,48 +460,143 @@ class AppTests(unittest.TestCase):
         from app import db
         from app.sample_data import DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_PROP, DEMO_SECOND_COMBINE, SECOND_COMBINE_START
 
-        with patch("app.main.sample_through", return_value=SECOND_COMBINE_START):
-            self.client.get("/demo").raise_for_status()
-            with db.session() as conn:
-                user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
-                accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
-                original_id = accounts[DEMO_PROP["name"]]
-                rows = db.trades(conn, user_id)
-                launch = [row for row in rows if row["closed_day"] == SECOND_COMBINE_START.isoformat()]
-                self.assertEqual(len(launch), 4)
-                self.assertTrue(all(row["account_id"] == accounts[DEMO_SECOND_COMBINE] for row in launch))
+        with tempfile.TemporaryDirectory() as data, patch.dict(os.environ, {"OMENSITE_DATA": data}), TestClient(app) as demo:
+            with patch("app.main.sample_through", return_value=SECOND_COMBINE_START):
+                demo.get("/demo").raise_for_status()
+                with db.session() as conn:
+                    user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                    accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
+                    original_id = accounts[DEMO_PROP["name"]]
+                    rows = db.trades(conn, user_id)
+                    launch = [row for row in rows if row["closed_day"] == SECOND_COMBINE_START.isoformat()]
+                    self.assertEqual(len(launch), 4)
+                    self.assertTrue(all(row["account_id"] == accounts[DEMO_SECOND_COMBINE] for row in launch))
 
-                # Recreate the old release's state after its launch-day refresh.
-                conn.execute("UPDATE trades SET account_id = ? WHERE user_id = ? AND account_id = ?",
-                             (accounts["Personal"], user_id, accounts[DEMO_SECOND_COMBINE]))
-                db.delete_account(conn, user_id, accounts[DEMO_SECOND_COMBINE])
+                    # Recreate the old release's state after its launch-day refresh.
+                    conn.execute("UPDATE trades SET account_id = ? WHERE user_id = ? AND account_id = ?",
+                                 (accounts["Personal"], user_id, accounts[DEMO_SECOND_COMBINE]))
+                    db.delete_account(conn, user_id, accounts[DEMO_SECOND_COMBINE])
 
-            previous = self.client.get("/", params={"account": original_id, "range": "all"}).raise_for_status().text
-            self.assertIn("Passed Oct 13, 2026", previous)
-            self.assertIn('data-net-pnl="3135.0"', previous)
-            self.assertIn(f'/trades?account={original_id}">View trade history', previous)
-            self.assertIn(f'>{DEMO_SECOND_COMBINE}</option>', previous)
-            self.assertEqual(self.client.get("/trades", params={"account": original_id}).text.count(
-                'class="button ghost trade-view"'), 20)
+                previous = demo.get("/", params={"account": original_id, "range": "all"}).raise_for_status().text
+                self.assertIn("Passed Oct 13, 2026", previous)
+                self.assertIn('data-net-pnl="3135.0"', previous)
+                self.assertIn(f'/trades?account={original_id}">View trade history', previous)
+                self.assertIn(f'>{DEMO_SECOND_COMBINE}</option>', previous)
+                self.assertEqual(demo.get("/trades", params={"account": original_id}).text.count(
+                    'class="button ghost trade-view"'), 20)
 
-            with db.session() as conn:
-                accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
-                restored = db.trades(conn, user_id)
-            self.assertEqual([row["id"] for row in restored], [row["id"] for row in rows])
-            self.assertEqual([row["net_pnl"] for row in restored], [row["net_pnl"] for row in rows])
-            self.assertFalse(any(row["account_id"] == accounts[DEMO_FUNDED_NAME] for row in restored))
-            second_id = accounts[DEMO_SECOND_COMBINE]
-            self.assertEqual({row["id"] for row in restored if row["account_id"] == second_id},
-                             {row["id"] for row in launch})
-            current = self.client.get("/", params={"account": second_id}).raise_for_status().text
-            self.assertIn('data-net-pnl="1869.5"', current)
-            self.assertIn("In progress", current)
+                with db.session() as conn:
+                    accounts = {a["name"]: a["id"] for a in db.accounts(conn, user_id)}
+                    restored = db.trades(conn, user_id)
+                self.assertEqual([row["id"] for row in restored], [row["id"] for row in rows])
+                self.assertEqual([row["net_pnl"] for row in restored], [row["net_pnl"] for row in rows])
+                self.assertFalse(any(row["account_id"] == accounts[DEMO_FUNDED_NAME] for row in restored))
+                second_id = accounts[DEMO_SECOND_COMBINE]
+                self.assertEqual({row["id"] for row in restored if row["account_id"] == second_id},
+                                 {row["id"] for row in launch})
+                current = demo.get("/", params={"account": second_id}).raise_for_status().text
+                self.assertIn('data-net-pnl="1869.5"', current)
+                self.assertIn("In progress", current)
 
-        with patch("app.main.sample_through", return_value=date(2026, 11, 10)):
-            self.client.get("/trades").raise_for_status()
-            with db.session() as conn:
-                new_rows = [row for row in db.trades(conn, user_id) if row["closed_day"] == "2026-11-10"]
-            self.assertEqual([row["account_id"] for row in new_rows], [second_id])
+            with patch("app.main.sample_through", return_value=date(2026, 11, 10)):
+                demo.get("/trades").raise_for_status()
+                with db.session() as conn:
+                    new_rows = [row for row in db.trades(conn, user_id) if row["closed_day"] == "2026-11-10"]
+                self.assertEqual([row["account_id"] for row in new_rows], [second_id])
+
+    def test_demo_review_chart_uses_saved_fills_and_preserves_history(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL
+
+        self.client.get("/demo").raise_for_status()
+        before = self.client.get("/export/backup").json()["trades"]
+        with db.session() as conn:
+            user = db.user_by_email(conn, DEMO_EMAIL)
+            trades = db.trades(conn, user["id"])
+            earliest = min(trades, key=lambda trade: trade["opened_at"])
+        for trade in (trades[0], earliest):
+            page = self.client.get(f'/trades/{trade["id"]}').raise_for_status().text
+            self.assertIn('class="sample-fill-chart"', page)
+            self.assertIn("Two recorded sample fills", page)
+            self.assertIn("Setup rationale", page)
+            self.assertIn("Execution outcome", page)
+            self.assertIn("Review focus", page)
+            self.assertNotIn(">Edit trade</a>", page)
+            self.assertNotIn("No trade chart yet", page)
+        self.assertEqual(self.client.get("/export/backup").json()["trades"], before)
+
+    def test_reviews_select_a_period_and_expand_trade_groups(self):
+        self.client.get("/demo").raise_for_status()
+        month = self.client.get("/reviews?period=month&month=2026-10").raise_for_status().text
+        self.assertIn('aria-current="page"', month)
+        self.assertIn("October 2026", month)
+        self.assertIn("$7,758.00", month)
+        self.assertIn('<details class="journal-disclosure">', month)
+        self.assertIn('name="period" value="month"', month)
+        week = self.client.get("/reviews?period=week&week=2026-11-09").raise_for_status().text
+        self.assertIn("Nov 09, 2026", week)
+        self.assertIn('name="period" value="week"', week)
+        empty = self.client.get("/reviews?period=month&month=2026-01").raise_for_status().text
+        self.assertIn("No trades closed in this month", empty)
+        self.assertNotIn('<details class="journal-disclosure">', empty)
+        self.assertEqual(self.client.get("/reviews?month=invalid").status_code, 400)
+
+    def test_news_snapshot_corrects_stale_market_date_without_rewriting_stored_news(self):
+        from app import db
+        from app.services import news_context
+
+        with db.session() as conn:
+            # Old installations already have this obsolete row in their seeded snapshot.
+            conn.execute(
+                """INSERT INTO news_events (title, when_utc, impact, category, actual, forecast, previous, note)
+                   VALUES (?, ?, 'low', 'early_close', '', '', '', '')""",
+                ("Day before Thanksgiving, early close 1:00 p.m. ET", "2026-11-25T18:00:00Z"),
+            )
+            user = db.user_by_email(conn, self.email)
+            before = db.news_events(conn)
+            context = news_context(conn, user)
+            self.assertEqual(before, db.news_events(conn))
+        self.assertTrue(any(event["ny_date"] == "Fri Nov 27" for event in context["early"]))
+        self.assertFalse(any(event["ny_date"] == "Wed Nov 25" for event in context["early"]))
+        page = self.client.get("/news").raise_for_status().text
+        self.assertIn("Saved snapshot", page)
+        self.assertIn("Oct 14, 2026", page)
+        self.assertIn("Nov 06, 2026", page)
+        self.assertNotIn("GDP and Core PCE have", page)
+        self.assertNotIn("Day before Thanksgiving", page)
+        self.assertIn("No earnings dates added", page)
+
+    def test_privacy_copy_and_active_storage_deletion(self):
+        from app import db
+
+        policy = self.client.get("/privacy").raise_for_status().text
+        for phrase in ("PostgreSQL", "no-store", "whole-user account deletion", "hosting", "on-page guide"):
+            self.assertIn(phrase.lower(), policy.lower())
+        page = self.post_trade(
+            instrument="ES",
+            legs=[("entry", "1", "5800", "2026-10-21T10:00"),
+                  ("exit", "1", "5810", "2026-10-21T10:30")],
+        )
+        self.assertNotIn('class="sample-fill-chart"', page.text)
+        trade_id = int(page.url.path.split("/")[-1])
+        uploaded = self.client.post(
+            f"/trades/{trade_id}/shots", data={"csrf": self.csrf, "slot": "entry"},
+            files={"image": ("shot.png", PNG, "image/png")},
+        ).raise_for_status()
+        shot_id = int(re.search(r"/media/(\d+)", uploaded.text)[1])
+        backup = self.client.get("/export/backup").raise_for_status()
+        self.assertEqual(backup.headers["Cache-Control"], "private, no-store")
+        self.assertTrue(any(t["screenshots"] for t in backup.json()["trades"]))
+        with db.session() as conn:
+            user_id = db.user_by_email(conn, self.email)["id"]
+            filename = db.shots(conn, trade_id)[0]["filename"]
+            self.assertEqual(db.media_content(conn, user_id, filename), PNG)
+        self.client.post(f"/trades/{trade_id}/delete", data={"csrf": self.csrf}).raise_for_status()
+        self.assertEqual(self.client.get(f"/trades/{trade_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/media/{shot_id}").status_code, 404)
+        with db.session() as conn:
+            self.assertIsNone(db.media_content(conn, user_id, filename))
+            self.assertEqual(db.legs(conn, trade_id), [])
 
     def test_demo_funded_account_has_an_empty_calendar(self):
         from app import db

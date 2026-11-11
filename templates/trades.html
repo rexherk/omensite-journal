@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Trades · Omensite Journal{% endblock %}
 {% block body %}
-<h1>Trades</h1>
-<p class="muted">Filter your trade history by market, session, side, grade, or account. Choose View trade to review a trade’s details.</p>
+<header class="journal-page-heading">
+  <h1>Trades</h1>
+  <p class="muted">Filter your trade history, then open a trade to review the setup and fills.</p>
+</header>
 <form class="filters panel trade-filters" method="get" action="/trades" aria-label="Filter trades">
   <label>Instrument
     <select name="instrument">
@@ -48,9 +50,9 @@
 <section class="panel trade-history" aria-label="Trade history">
   {% if trades %}
   <div class="scroll" role="region" aria-label="Trade history table" tabindex="0">
-    <table>
-      <thead>
-        <tr>
+    <table role="table">
+      <thead role="rowgroup">
+        <tr role="row">
           <th scope="col">Opened</th>
           <th scope="col">Market</th>
           <th scope="col">Side</th>
@@ -59,37 +61,34 @@
           <th scope="col" title="Net P&amp;L after fees divided by initial risk">R:R</th>
           <th scope="col">Session</th>
           <th scope="col">Grade</th>
-          <th scope="col">Hold</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody role="rowgroup">
       {% for trade in trades %}
-      <tr>
-        <td class="trade-opened">
+      <tr role="row">
+        <td role="cell" class="trade-opened" data-label="Opened">
           <time datetime="{{ trade.opened_at }}">{{ trade.when }}</time>
+          <small class="trade-duration muted">{{ ('Hold · ' ~ trade.hold_label) if trade.is_closed else 'Still open' }}</small>
           <a class="button ghost trade-view" href="/trades/{{ trade.id }}" aria-label="View trade for {{ trade.instrument }} opened {{ trade.when }}">View trade</a>
         </td>
-        <td class="trade-market">
+        <td role="cell" class="trade-market" data-label="Market">
           <span class="trade-symbol">{{ trade.instrument }}</span>
           <div class="trade-badges">
             {% for tag in trade.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
             {% if trade.news %}<span class="tag news">News</span>{% endif %}
           </div>
         </td>
-        <td class="trade-side">{{ trade.direction }}
+        <td role="cell" class="trade-side" data-label="Side">{{ trade.direction | title }}
           <div class="trade-badges">
             {% if trade.followed_plan == 0 %}<span class="pill-tag bad">Rule Broken</span>{% endif %}
             {% if "Revenge trade" in trade.mistakes %}<span class="pill-tag bad">Revenge</span>{% endif %}
-            {% if trade.news %}<span class="pill-tag warn">News Day</span>{% endif %}
-            {% if trade.kill_zone and trade.kill_zone != "None" %}<span class="pill-tag">{{ trade.kill_zone }}</span>{% endif %}
           </div>
         </td>
-        <td>{{ trade.account_name }}</td>
-        <td class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
-        <td class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
-        <td>{{ trade.session }}</td>
-        <td>{{ trade.grade or "—" }}</td>
-        <td>{% if not trade.is_closed %}Open{% else %}{{ trade.hold_label }}{% endif %}</td>
+        <td role="cell" class="trade-account" data-label="Account"><span>{{ trade.account_name }}</span></td>
+        <td role="cell" class="num {{ trade.net_pnl | pnl_class }}" data-label="Net">{{ trade.net_pnl | money }}</td>
+        <td role="cell" class="num {{ trade.r_multiple | pnl_class }}" data-label="R:R">{{ trade.r_multiple | rmult }}</td>
+        <td role="cell" data-label="Session">{{ trade.kill_zone if trade.kill_zone and trade.kill_zone != "None" else (trade.session or "—") }}</td>
+        <td role="cell" data-label="Grade">{{ trade.grade or "—" }}</td>
       </tr>
       {% endfor %}
       </tbody>

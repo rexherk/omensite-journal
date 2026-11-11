@@ -135,3 +135,17 @@ dialog,.auth-dialog-inner,.guide-dialog .import-list li{background:var(--oj-surf
   .hero h1{font-size:clamp(2rem,9.7vw,4.25rem)}
   .preview-brand .oj-mark{width:12px;height:12px}.preview-brand .oj-brand>.lockup{font-size:6px;letter-spacing:-.2px}.preview-brand .oj-brand small{font-size:2px;letter-spacing:1px;margin-top:2px}.preview-brand .oj-brand{gap:2px}.preview-main .overview-stat{padding:7px 4px}.preview-main .overview-stats{gap:4px}.preview-main .overview-calendar-note{font-size:4px}.preview-main .overview-day{height:42px}
 }
+
+/* Shared public call-to-action sizing. */
+.hero-actions .hero-demo { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; min-height: 48px; }
+.hero-signin-note { margin: .85rem 0 0; color: var(--oj-paper); font-size: .8rem; line-height: 1.6; }
+.hero-actions > a { min-height: 48px; border-radius: 6px; }
+.hero .hero-actions { gap: .8rem; flex-wrap: wrap; }
+.products-section .text-link, .public-actions a, .access-section a { min-height: 44px; }
+.public-actions a { display: inline-flex; align-items: center; }
+.hero .hero-demo { color: var(--oj-secondary); border-color: var(--oj-secondary); background: var(--oj-surface); padding: 15px 24px; }
+@media(max-width:680px) {
+  .hero-signin-note { max-width: 19rem; }
+  .hero .hero-actions a { font-size: .85rem; }
+  .hero .hero-demo { padding: 14px 20px; }
+}

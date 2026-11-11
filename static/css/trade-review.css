@@ -141,6 +141,21 @@
 
 .review-workspace-head { justify-content: space-between; margin-bottom: .85rem; }
 .review-market-link { font-size: .79rem; }
+.sample-fill-chart {
+  margin: 0;
+  padding: .65rem;
+  border-radius: 8px;
+  background: #2c1726;
+  color: var(--oj-paper);
+}
+.sample-fill-chart svg { display: block; width: 100%; max-height: 21rem; }
+.sample-fill-chart text { fill: currentColor; font: 11px var(--oj-mono); }
+.sample-fill-chart figcaption { padding: .4rem .55rem; font-size: .8rem; }
+.fill-plan-line, .fill-guide { stroke: #bd9aac; stroke-opacity: .55; }
+.fill-connector { stroke: #f4c59b; stroke-width: 2; stroke-dasharray: 5 4; }
+.fill-entry { fill: #ffe7cf; }
+.fill-exit { fill: #f4a6be; }
+.sample-fill-details > div { padding: .6rem .7rem; background: var(--oj-secondary-soft); border-radius: 6px; }
 .review-chart-empty {
   position: relative;
   display: grid;

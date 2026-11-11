@@ -1,16 +1,25 @@
 {% extends "base.html" %}
 {% block title %}News · Omensite Journal{% endblock %}
 {% block body %}
-<h1>News</h1>
-<p class="muted">Week of {{ week_label }}, shown in {{ user.timezone }}. Trades opened within {{ window }} minutes of a high-impact release are marked. {{ flagged }} of your trades are inside that window.</p>
-<p>{{ caveat }}</p>
+<header class="journal-page-heading">
+  <h1>News</h1>
+  <p class="muted">Economic releases in the journal’s saved snapshot and 2026 NYSE market dates.</p>
+</header>
+<aside class="panel news-snapshot-note" aria-label="Snapshot coverage">
+  <strong>Saved snapshot{% if snapshot_range %} · {{ snapshot_range }}{% endif %}</strong>
+  <p class="muted">This snapshot does not update live. Release times are shown in {{ user.timezone }}. Check the publisher’s calendar for current dates and times.</p>
+</aside>
 
 <section class="split">
   <div>
-    {% for day in days %}
+    <article class="panel">
+      <h2>This week</h2>
+      <p class="muted">{{ week_label }}</p>
+      <p>{{ flagged }} {{ "trade" if flagged == 1 else "trades" }} in your journal opened within {{ window }} minutes of a saved high-impact release.</p>
+    </article>
+    {% for day in days if day.events %}
     <article class="panel">
       <h2>{{ day.label }}</h2>
-      {% if day.events %}
         {% for event in day.events %}
         <p>
           <span class="tag {{ event.impact }}">{{ event.impact }}</span>
@@ -21,25 +30,26 @@
           {% if event.note %}<br><span class="muted">{{ event.note }}</span>{% endif %}
         </p>
         {% endfor %}
-      {% else %}
-      <p class="muted">No built-in release on this day.</p>
-      {% endif %}
     </article>
+    {% else %}
+    <article class="panel"><p class="muted">No releases in the snapshot for this week.</p><a href="#news-snapshot">Browse saved releases</a></article>
     {% endfor %}
   </div>
   <div>
     <article class="panel">
-      <h2>Recent high-impact</h2>
+      <h2>Recent high-impact releases</h2>
       {% for event in recent %}
-      <p><span class="tag high">high</span> {{ event.title }} <span class="muted">{{ event.note }}</span></p>
-      {% else %}<p class="muted">None in the two weeks before this week.</p>{% endfor %}
-      <h2>Coming up</h2>
+      <p><strong>{{ event.title }}</strong><br><span class="muted">{{ event.date }} · {{ event.time }}</span></p>
+      {% else %}<p class="muted">The snapshot has no high-impact releases in the preceding two weeks.</p>{% endfor %}
+      <h3>Upcoming in the snapshot</h3>
       {% for event in later %}
-      <p><span class="tag high">high</span> {{ event.title }} {% if event.note %}<span class="muted">{{ event.note }}</span>{% endif %}</p>
-      {% else %}<p class="muted">No later high-impact date in the snapshot.</p>{% endfor %}
+      <p><strong>{{ event.title }}</strong><br><span class="muted">{{ event.date }} · {{ event.time }}</span></p>
+      {% else %}<p class="muted">No upcoming high-impact releases are saved.</p>{% endfor %}
     </article>
     <article class="panel">
-      <h2>NYSE holidays, 2026</h2>
+      <h2>NYSE market dates · 2026</h2>
+      <p class="muted">New York time. <a href="https://www.nyse.com/trade/hours-calendars">NYSE trading calendar</a></p>
+      <h3>Holidays</h3>
       <ul>{% for event in holidays %}<li>{{ event.ny_date }} — {{ event.title }}</li>{% endfor %}</ul>
       <h3>Early closes</h3>
       <ul>{% for event in early %}<li>{{ event.ny_date }} — {{ event.title }}</li>{% endfor %}</ul>
@@ -66,6 +76,7 @@
         <span>{{ row.symbol }} · {{ row.when }} {% if row.note %}· {{ row.note }}{% endif %}</span>
         <button class="ghost" type="submit">Remove</button>
       </form>
+      {% else %}<p class="muted">No earnings dates added.</p>
       {% endfor %}
       <form method="post" action="/news/earnings">
         <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -78,9 +89,10 @@
   </div>
 </section>
 
-<section class="panel">
-  <h2>Built-in snapshot</h2>
-  <p class="muted">Not a live feed. Times below are in {{ user.timezone }}.</p>
+<section class="panel" id="news-snapshot">
+  <h2>Saved releases</h2>
+  {% if snapshot %}
+  <p class="muted">Times in {{ user.timezone }}. A dash means the figure was omitted from the snapshot.</p>
   <div class="scroll">
     <table>
       <tr><th>When</th><th>Impact</th><th>Release</th><th>Actual</th><th>Forecast</th><th>Previous</th><th>Note</th></tr>
@@ -97,5 +109,6 @@
       {% endfor %}
     </table>
   </div>
+  {% else %}<p class="muted">No economic releases are saved.</p>{% endif %}
 </section>
 {% endblock %}

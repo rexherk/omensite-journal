@@ -830,7 +830,8 @@ def reviews_page(request: Request):
             )
     except FormError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return render(request, "reviews.html", **ctx)
+    period = request.query_params.get("period") or ("month" if "month" in request.query_params and "week" not in request.query_params else "week")
+    return render(request, "reviews.html", period="month" if period == "month" else "week", **ctx)
 
 
 @app.get("/playbook")

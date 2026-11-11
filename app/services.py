@@ -36,9 +36,9 @@ from app.catalog import (
 from app.imports import ImportError as CsvImportError
 from app.imports import parse_csv
 from app.instruments import future_root, parse_symbol, spec_for
-from app.news_data import CAVEAT
+from app.news_data import build_events
 from app.paths import import_dir, upload_path
-from app.present import equity_svg
+from app.present import equity_svg, sample_fill_chart
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_NOTE, DEMO_PROP,
     DEMO_SECOND_COMBINE, FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, SECOND_COMBINE_START,
@@ -1070,6 +1070,7 @@ def trade_detail(conn, user: dict, trade_id: int) -> dict | None:
         item["when"] = show_time(leg["filled_at"], zone)
         legs.append(item)
     by_slot = {shot["slot"]: shot for shot in db.shots(conn, trade_id)}
+    example = user["email"] == DEMO_EMAIL and row["notes"] == DEMO_NOTE
     warnings = []
     if row["direction"] == "long" and row["stop"] and row["avg_entry"] and row["stop"] >= row["avg_entry"]:
         warnings.append("The stop is not below the average entry.")
@@ -1084,6 +1085,7 @@ def trade_detail(conn, user: dict, trade_id: int) -> dict | None:
         "slots": [{"key": key, "label": label, "shot": by_slot.get(key)} for key, label in SHOT_SLOTS],
         "news": news_near(row.get("opened_at"), events, int(user["news_window_minutes"])),
         "embed": chart_embed(row),
+        "sample_chart": sample_fill_chart(row, legs) if example else None,
         "warnings": warnings,
         "when": show_time(row.get("opened_at"), zone),
         "closed_label": show_time(row.get("closed_at"), zone),
@@ -1110,7 +1112,9 @@ def news_context(conn, user: dict) -> dict:
     today = datetime.now(zone).date()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
-    events = db.news_events(conn)
+    events = [event for event in db.news_events(conn) if event["category"] == "economic"]
+    # Read exchange dates from the checked-in calendar so stale seeds cannot override corrections.
+    market_dates = [event for event in build_events() if event["category"] != "economic"]
     days = []
     for offset in range(7):
         day = week_start + timedelta(days=offset)
@@ -1120,7 +1124,7 @@ def news_context(conn, user: dict) -> dict:
     recent_start = week_start - timedelta(days=14)
     later_end = week_end + timedelta(days=40)
     rank = {"high": 0, "medium": 1, "low": 2}
-    for event in events:
+    for event in sorted(events + market_dates, key=lambda event: event["when_utc"]):
         moment = parse_iso(event["when_utc"])
         local = moment.astimezone(zone)
         ny = moment.astimezone(NY)
@@ -1128,6 +1132,7 @@ def news_context(conn, user: dict) -> dict:
             "title": event["title"],
             "impact": event["impact"],
             "time": local.strftime("%I:%M %p").lstrip("0"),
+            "date": local.strftime("%a, %b %d, %Y"),
             "sort": local.strftime("%H:%M"),
             "actual": event["actual"] or "",
             "forecast": event["forecast"] or "",
@@ -1186,9 +1191,9 @@ def news_context(conn, user: dict) -> dict:
         "watchlist": db.watch_rows(conn, user["id"]),
         "earnings": earnings,
         "window": window,
-        "caveat": CAVEAT,
         "flagged": flagged,
         "snapshot": snapshot,
+        "snapshot_range": f"{snapshot[0]['when'][:12].rstrip()} – {snapshot[-1]['when'][:12].rstrip()}" if snapshot else "",
     }
 
 
@@ -1262,6 +1267,7 @@ def review_context(conn, user: dict, week_text: str, month_text: str) -> dict:
     return {
         "week_start": week_start.isoformat(),
         "week_end": week_end.isoformat(),
+        "week_label": f"{week_start:%b %d, %Y} – {week_end:%b %d, %Y}",
         "month_value": month_start.strftime("%Y-%m"),
         "month_label": month_start.strftime("%B %Y"),
         "week": review_slice(math, tags, week_start, week_end),

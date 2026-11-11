@@ -4,9 +4,9 @@
 {% block body %}
 <div class="page-head{% if demo_mode %} demo-dashboard-head{% endif %}">
   <div>
-    <p class="kicker">Overview</p>
+    {% if not demo_mode %}<p class="kicker">Overview</p>{% endif %}
     <h1>Dashboard</h1>
-    <p class="muted">Your trading, at a glance.</p>
+    {% if not demo_mode %}<p class="muted">Your trading, at a glance.</p>{% endif %}
   </div>
   {% if demo_mode %}
   <svg class="demo-dashboard-art" viewBox="0 0 520 208" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">
@@ -26,8 +26,12 @@
   </svg>
   {% endif %}
   <div class="actions">
+    {% if demo_mode %}
+    {% if recent %}<a class="button" href="/trades/{{ recent[0].id }}">Review a sample trade</a>{% endif %}
+    {% else %}
     <a class="button" href="/trades/new">Log a trade</a>
     <a class="button ghost" href="/import">Import fills</a>
+    {% endif %}
     <a class="button ghost" href="/report">Print / PDF</a>
   </div>
 </div>

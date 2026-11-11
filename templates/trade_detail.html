@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ trade.instrument }} · Omensite Journal{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/css/trade-review.css?v=2">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/trade-review.css?v=3">{% endblock %}
 {% block body %}
 <article class="trade-review" data-shot-action="/trades/{{ trade.id }}/shots">
   <header class="review-head">
@@ -19,11 +19,13 @@
     </div>
     <div class="review-actions">
       <span class="review-status">{{ "Closed" if trade.is_closed else "Still open" }}</span>
+      {% if not demo_mode %}
       <a class="button" href="/trades/{{ trade.id }}/edit">Edit trade</a>
       <form method="post" action="/trades/{{ trade.id }}/delete" onsubmit="return confirm('Delete this trade?');">
         <input type="hidden" name="csrf" value="{{ csrf }}">
         <button class="ghost" type="submit">Delete</button>
       </form>
+      {% endif %}
     </div>
   </header>
 
@@ -146,11 +148,34 @@
       <div id="trade-chart" class="review-panel" data-tab-panel="chart">
         <div class="review-workspace-head">
           <div>
-            <p class="review-kicker">Price action</p>
-            <h2 class="review-panel-title">Chart workspace</h2>
+            <p class="review-kicker">{{ "Simulated example" if sample_chart else "Price action" }}</p>
+            <h2 class="review-panel-title">{{ "Entry and exit" if sample_chart else "Chart workspace" }}</h2>
           </div>
-          {% if embed %}<a class="review-market-link" href="{{ embed.link }}" target="_blank" rel="noopener">Open in TradingView ↗</a>{% endif %}
+          {% if embed and not sample_chart %}<a class="review-market-link" href="{{ embed.link }}" target="_blank" rel="noopener">Open in TradingView ↗</a>{% endif %}
         </div>
+        {% if sample_chart %}
+        {% set entry, exit = sample_chart.fills %}
+        <figure class="sample-fill-chart">
+          <svg viewBox="0 0 360 176" role="img" aria-label="Simulated entry and exit plotted against the planned stop and target">
+            {% for level in sample_chart.levels %}
+            <line x1="16" x2="344" y1="{{ level.y }}" y2="{{ level.y }}" class="fill-plan-line"/>
+            <text x="16" y="{{ level.y - 6 }}">{{ level.label }} {{ level.price | plain }}</text>
+            {% endfor %}
+            <line x1="{{ entry.x }}" y1="{{ entry.y }}" x2="{{ exit.x }}" y2="{{ exit.y }}" class="fill-connector"/>
+            {% for fill in sample_chart.fills %}
+            <line x1="{{ fill.x }}" x2="{{ fill.x }}" y1="{{ fill.y }}" y2="153" class="fill-guide"/>
+            <circle cx="{{ fill.x }}" cy="{{ fill.y }}" r="5" class="fill-{{ fill.kind }}"/>
+            <text x="{{ fill.x }}" y="166" text-anchor="middle">{{ fill.kind | title }}</text>
+            {% endfor %}
+          </svg>
+          <figcaption>Two recorded sample fills. The dashed connector links them across the holding period.</figcaption>
+        </figure>
+        <dl class="review-quick-stats sample-fill-details">
+          {% for fill in sample_chart.fills %}
+          <div><dt>{{ fill.kind | title }} fill</dt><dd>{{ fill.price | plain }} · {{ fill.qty | plain }} contracts</dd></div>
+          {% endfor %}
+        </dl>
+        {% else %}
         <div class="review-chart-empty">
           <span class="review-chart-symbol">{{ trade.instrument }}{% if trade.session %} · {{ trade.session }}{% endif %}</span>
           <div class="review-chart-message">
@@ -162,16 +187,23 @@
             <p>Trade chart data will appear here when available. Saved screenshots are in Attachments.</p>
           </div>
         </div>
+        {% endif %}
       </div>
 
       <div id="trade-notes" class="review-panel" data-tab-panel="review">
         <p class="review-kicker">Post-trade reflection</p>
         <h2 class="review-panel-title">Review notes</h2>
         <dl class="review-notes">
+          {% if sample_chart %}
+          <div><dt>Setup rationale</dt><dd>{{ trade.lesson }}</dd></div>
+          <div><dt>Execution outcome</dt><dd>The simulated {{ trade.direction }} closed for <strong class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</strong> after {{ trade.fees | money }} in fees. The plan called for {{ trade.planned_r | plain }}:1 and the fill realized <strong class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</strong>.</dd></div>
+          <div><dt>Review focus</dt><dd>Compare the exit fill with the planned target and stop. Record what prompted the exit before deciding whether to repeat the setup.</dd></div>
+          {% else %}
           <div><dt>What went right</dt><dd>{{ trade.went_right or "—" }}</dd></div>
           <div><dt>What went wrong</dt><dd>{{ trade.went_wrong or "—" }}</dd></div>
           <div><dt>Lesson</dt><dd>{{ trade.lesson or "—" }}</dd></div>
           {% if trade.notes %}<div><dt>Additional notes</dt><dd>{{ trade.notes }}</dd></div>{% endif %}
+          {% endif %}
         </dl>
         <section class="review-section">
           <h2>Psychology</h2>

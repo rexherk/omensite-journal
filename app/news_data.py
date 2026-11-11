@@ -13,12 +13,6 @@ from zoneinfo import ZoneInfo
 NY = ZoneInfo("America/New_York")
 UTC = ZoneInfo("UTC")
 
-CAVEAT = (
-    "GDP and Core PCE have been listed on both October 29 and October 30 by different calendars. "
-    "Confirm the BEA time before you treat either morning as a release. "
-    "This tab is a built-in snapshot, not a live feed."
-)
-
 # month, day, hour, minute, title, impact, actual, forecast, previous, note
 _ECONOMIC = [
     (10, 14, 8, 30, "CPI m/m", "high", "+0.65%", "", "", "September CPI, released October 14."),
@@ -75,7 +69,7 @@ _HOLIDAYS = [
 ]
 
 _EARLY = [
-    (11, 25, "Day before Thanksgiving, early close 1:00 p.m. ET"),
+    (11, 27, "Day after Thanksgiving, early close 1:00 p.m. ET"),
     (12, 24, "Christmas Eve, early close 1:00 p.m. ET"),
 ]
 

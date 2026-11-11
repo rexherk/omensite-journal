@@ -26,5 +26,5 @@ PUBLIC_PAGES = {
     "solutions": {"kind": "solutions", "title": "Solutions", "headline": "Build around the way you trade.", "lead": "Bring structure to your routine, perspective to your performance, and context to your account progress."},
     "brokers": {"kind": "brokers", "title": "Supported Brokers", "headline": "Topstep. Your fills, connected.", "lead": "Topstep is the only currently supported broker import. Bring your CSV export into Omensite, preview the records, and choose the account before saving."},
     "resources": {"kind": "resources", "title": "Resources", "headline": "A clearer process starts here.", "lead": "Practical guides for getting started, keeping a review routine, and understanding the journal."},
-    "privacy": {"kind": "privacy", "title": "Your Data & Privacy", "headline": "Your record. Your workspace.", "lead": "Omensite stores trades in the server's journal database and chart images in its data folder. Each signed-in trader sees their own journal."},
+    "privacy": {"kind": "privacy", "title": "Your Data & Privacy", "headline": "Your record. Your workspace.", "lead": "The hosted journal stores your trading records, notes, account settings, and uploaded images in its database. Access to journal records is scoped to the signed-in user."},
 }

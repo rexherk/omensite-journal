@@ -17,7 +17,25 @@
 {% elif page.kind == 'detail' %}
   <div class="public-detail"><div><p class="eyebrow"><i></i> BUILT FOR YOUR RECORD</p><h2>The details<br>stay connected.</h2><ul class="public-checks">{% for point in page.points %}<li>{{ icon('check') }}{{ point }}</li>{% endfor %}</ul><a class="text-link" href="/demo">See it in the demo {{ icon('arrow') }}</a></div><div class="public-detail-art">{{ visual(page.art) }}</div></div>
 {% elif page.kind == 'privacy' %}
-  <div class="guide-article"><h2>A record you can take with you.</h2><p>Your journal includes CSV export and a JSON backup. These files contain your trading records, so store them somewhere you trust.</p><h3>Your signed-in workspace</h3><p>Trades are associated with the signed-in account. The sample demo uses separate records and is read-only. Entering demo mode preserves your normal sign-in session.</p><h3>Images and notes</h3><p>Uploaded chart images and written reviews live alongside the journal on this server. The homepage previews and demo use illustrative sample data.</p><h3>Local deployment</h3><p>This version runs on this computer. Data storage and access depend on the server hosting your journal. The current app does not send orders or automatically synchronize with a broker.</p></div>
+  <div class="guide-article">
+    <h2>How the hosted journal stores your data</h2>
+    <p>At journal.omensite.com, the application uses a managed PostgreSQL connection. Trading records, written reviews, account settings, sign-in sessions, and uploaded chart images are saved in that database. Temporary CSV import previews are stored on the server until confirmation or cleanup.</p>
+    <h3>Discord sign-in and access</h3>
+    <p>Discord provides your account ID, username, display name, avatar information, and email when supplied. Omensite uses that identity to create or find your journal. Session cookies keep you signed in, and a separate demo cookie opens the shared sample workspace.</p>
+    <p>Journal routes check which user owns the requested records. Hosting operators and authorized database administrators manage the underlying service and its storage.</p>
+    <h3>Export your records</h3>
+    <p>Settings provides a CSV trade-history export, a JSON backup, and a print view. JSON includes trade fills, notes, tags, checklists, account settings, and saved chart images. CSV contains trade fields and notes. Export downloads require a signed-in or demo session and use private, no-store cache headers. Keep your downloaded copies somewhere you trust.</p>
+    <h3>Delete individual records</h3>
+    <p>You can delete a trade from its detail page or remove a chart attachment. Deleting a trade removes its fills, tags, checklist answers, linked screenshots, and associated image data from the application’s active storage. An account containing trades must have those trades removed before the account can be deleted.</p>
+    <p>The application does not currently offer a whole-user account deletion control. Hosting backups and operational logs have separate retention settings. This application does not specify a verified retention period for those copies.</p>
+    <h3>Demo and help</h3>
+    <p>The demo uses shared simulated records and is read-only. Its results demonstrate the journal workflow. The help button opens an on-page guide.</p>
+    <h3 id="support">Support and account-closure requests</h3>
+    <p>Discord support contact · Username <strong>reelrex</strong>.</p>
+    <p>Contact reelrex on Discord for help or to request closure of your Omensite Journal account. Ask support to confirm the handling and completion of your request. Hosting backup and log retention details still require administrator confirmation.</p>
+    <h3>Running a local copy</h3>
+    <p>A local installation uses SQLite in its configured data folder when no PostgreSQL connection is provided. Older local chart-image files remain supported. Storage for a local copy is controlled by the person running that server.</p>
+  </div>
 {% endif %}
 {% if page.steps %}<div class="public-section-head"><p class="eyebrow"><i></i> THE PROCESS</p><h2>A clear next step.</h2></div><div class="process-grid {{ 'guide-steps' if page.kind == 'guide' else '' }}">{% for title,body in page.steps %}<article><span class="step-number">0{{ loop.index }}</span><h3>{{ title }}</h3><p>{{ body }}</p></article>{% endfor %}</div>{% endif %}
 {% if page.faq %}<div class="standalone-faq faq-list">{% for question,answer in page.faq %}<details><summary>{{ question }}<span>+</span></summary><p>{{ answer }}</p></details>{% endfor %}</div>{% endif %}

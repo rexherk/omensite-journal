@@ -69,6 +69,25 @@ def hold(value) -> str:
     return hold_label(int(value))
 
 
+def sample_fill_chart(trade: dict, legs: list[dict]) -> dict | None:
+    """Plot the two recorded sample fills against the planned price levels."""
+    if [leg["kind"] for leg in legs] != ["entry", "exit"]:
+        return None
+    prices = [leg["price"] for leg in legs]
+    levels = [(label, trade[key]) for label, key in (("Stop", "stop"), ("Target", "target"))
+              if trade[key] is not None]
+    low = min(prices + [price for _, price in levels])
+    high = max(prices + [price for _, price in levels])
+
+    def y(price):
+        return round(138 - 102 * (price - low) / (high - low or 1), 2)
+
+    return {
+        "fills": [dict(leg, x=x, y=y(leg["price"])) for x, leg in zip((64, 272), legs, strict=True)],
+        "levels": [{"label": label, "price": price, "y": y(price)} for label, price in levels],
+    }
+
+
 def equity_svg(curve: list[dict]) -> str:
     if len(curve) < 2:
         return ""

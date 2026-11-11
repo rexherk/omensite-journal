@@ -1,32 +1,66 @@
 {% extends "base.html" %}
 {% block title %}Reviews · Omensite Journal{% endblock %}
 {% block body %}
-<h1>Reviews</h1>
-<form class="filters panel" method="get" action="/reviews">
-  <label>Week of<input type="date" name="week" value="{{ week_start }}"></label>
-  <label>Month<input type="month" name="month" value="{{ month_value }}"></label>
-  <button type="submit">Show</button>
-</form>
-
-<section class="two">
-  {% for title, block, label in [("Week", week, week_start ~ " to " ~ week_end), ("Month", month, month_label)] %}
-  <article class="panel">
-    <h2>{{ title }}</h2>
-    <p class="muted">{{ label }}</p>
-    <p>{{ block.count }} closed · <span class="{{ block.net_pnl | pnl_class }}">{{ block.net_pnl | money }}</span> · Plan adherence {{ block.adherence | pct }}</p>
-    <h3>Best</h3>
-    {% for trade in block.best %}
-    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span> · <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span><br><span class="muted">{{ trade.lesson or "" }}</span></p>
-    {% else %}<p class="muted">No closed trades in this {{ title|lower }}.</p>{% endfor %}
-    <h3>Worst</h3>
-    {% for trade in block.worst %}
-    <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }}</a> <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span> · <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span></p>
+{% set block = month if period == "month" else week %}
+{% set period_label = month_label if period == "month" else week_label %}
+<header class="journal-page-heading">
+  <h1>Reviews</h1>
+  <p class="muted">Review your results and how closely you followed your plan.</p>
+</header>
+<section class="panel journal-period">
+  <nav class="pill-row" aria-label="Review period">
+    {% for key, label in [("week", "Week"), ("month", "Month")] %}
+    <a class="pill-toggle {{ 'on' if key == period }}" {% if key == period %}aria-current="page"{% endif %}
+       href="/reviews?period={{ key }}&amp;week={{ week_start }}&amp;month={{ month_value }}">{{ label }}</a>
     {% endfor %}
-    <h3>Mistakes</h3>
-    {% for name, count in block.mistakes %}
-    <p>{{ name }} · {{ count }}</p>
-    {% else %}<p class="muted">No mistake tags in this stretch.</p>{% endfor %}
-  </article>
-  {% endfor %}
+  </nav>
+  <form class="filters journal-date-filter" method="get" action="/reviews">
+    <input type="hidden" name="period" value="{{ period }}">
+    {% if period == "month" %}
+    <input type="hidden" name="week" value="{{ week_start }}">
+    <label>Month<input type="month" name="month" value="{{ month_value }}" required></label>
+    {% else %}
+    <input type="hidden" name="month" value="{{ month_value }}">
+    <label>Week of<input type="date" name="week" value="{{ week_start }}" required></label>
+    {% endif %}
+    <button type="submit">Apply date</button>
+  </form>
+</section>
+
+<section class="panel" aria-labelledby="review-period-title">
+  <h2 id="review-period-title">{{ period_label }}</h2>
+  <div class="stats journal-summary">
+    <div class="stat"><span>Closed trades</span><strong>{{ block.count }}</strong></div>
+    <div class="stat"><span>Net P&amp;L</span><strong class="{{ block.net_pnl | pnl_class }}">{{ block.net_pnl | money }}</strong></div>
+    <div class="stat"><span>Plan adherence</span><strong>{{ block.adherence | pct }}</strong></div>
+  </div>
+  {% if block.count %}
+  <div class="journal-stack">
+    {% for label, trades in [("Highest R trades", block.best), ("Lowest R trades", block.worst)] %}
+    <details class="journal-disclosure">
+      <summary>{{ label }} <span>{{ trades | length }}</span></summary>
+      <ul class="journal-list">
+        {% for trade in trades %}
+        <li>
+          <a href="/trades/{{ trade.id }}">Review {{ trade.instrument }} trade</a>
+          <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span>
+          <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span>
+          {% if trade.lesson %}<p class="muted">{{ trade.lesson }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+    <details class="journal-disclosure">
+      <summary>Mistake tags <span>{{ block.mistakes | length }}</span></summary>
+      <ul class="journal-list">
+        {% for name, count in block.mistakes %}<li>{{ name }} · {{ count }}</li>
+        {% else %}<li class="muted">No mistake tags on closed trades in this period.</li>{% endfor %}
+      </ul>
+    </details>
+  </div>
+  {% else %}
+  <p class="muted">No trades closed in this {{ period }}. Choose another date to review past trades.</p>
+  {% endif %}
 </section>
 {% endblock %}
