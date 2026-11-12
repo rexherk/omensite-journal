@@ -154,6 +154,8 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .journal-list li > span { display: inline-block; margin-left: .75rem; }
 .journal-list p { margin: .45rem 0 0; font-size: .85rem; }
 .news-snapshot-note p { margin: .4rem 0 0; line-height: 1.6; }
+.news-calendar .journal-disclosure { margin-top: .9rem; }
+.news-calendar-widget { display: block; width: 100%; height: clamp(30rem, 72vh, 42rem); border: 1px solid var(--oj-line); border-radius: 6px; }
 #news-snapshot { scroll-margin-top: 8rem; }
 .demo-banner { position: relative; top: auto; padding-block: 6px; min-height: 48px; }
 .demo-banner strong, .demo-banner a { font-size: .8rem; }

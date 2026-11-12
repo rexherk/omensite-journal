@@ -3,8 +3,27 @@
 {% block body %}
 <header class="journal-page-heading">
   <h1>News</h1>
-  <p class="muted">Economic releases in the journal’s saved snapshot and 2026 NYSE market dates.</p>
+  <p class="muted">Economic calendar, saved releases, and 2026 NYSE market dates.</p>
 </header>
+<section class="panel news-calendar" aria-labelledby="economic-calendar">
+  <h2 id="economic-calendar">Economic calendar</h2>
+  <p class="muted">Showing the embedded calendar connects your browser to Tradays. Tradays may collect your IP address and browser details and use cookies. <a href="https://www.tradays.com/en/privacy" rel="noreferrer">Tradays privacy policy</a></p>
+  <div class="actions">
+    <a class="button ghost" href="https://www.tradays.com/en" target="_blank" rel="noopener noreferrer" aria-label="Open on Tradays in a new tab">Open on Tradays <span aria-hidden="true">↗</span></a>
+    <a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener noreferrer" aria-label="Forex Factory calendar in a new tab">Forex Factory calendar <span aria-hidden="true">↗</span></a>
+  </div>
+  <details class="journal-disclosure" data-tradays-calendar>
+    <summary>Show Tradays calendar</summary>
+    <p class="muted">Tradays uses your browser’s local time. If the widget is unavailable, use Open on Tradays above.</p>
+    <noscript><p>Open the calendar on Tradays using the link above.</p></noscript>
+    <template>
+      {% set widget_document %}{% include "partials/tradays_widget.html" %}{% endset %}
+      <iframe class="news-calendar-widget" title="Tradays economic calendar"
+              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+              referrerpolicy="no-referrer" srcdoc="{{ widget_document | forceescape }}"></iframe>
+    </template>
+  </details>
+</section>
 <aside class="panel news-snapshot-note" aria-label="Snapshot coverage">
   <strong>Saved snapshot{% if snapshot_range %} · {{ snapshot_range }}{% endif %}</strong>
   <p class="muted">This snapshot does not update live. Release times are shown in {{ user.timezone }}. Check the publisher’s calendar for current dates and times.</p>
@@ -112,3 +131,4 @@
   {% else %}<p class="muted">No economic releases are saved.</p>{% endif %}
 </section>
 {% endblock %}
+{% block scripts %}<script src="/static/js/news.js?v=tradays-1"></script>{% endblock %}

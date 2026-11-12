@@ -52,7 +52,7 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - A read-only demo and homepage preview backed by the same sample trades, with matching P&L totals and days off
 - Dashboard, monthly P&L calendar, plain-language notes, rule-break cost, and profit left on the table
 - Prop-account limits: daily loss, trailing drawdown, and target progress
-- A built-in news snapshot for autumn 2026, plus holidays and early closes
+- An optional live Tradays economic calendar, plus a built-in news snapshot for autumn 2026, holidays, and early closes
 - Emotion and mistake tags, a daily plan, and weekly and monthly review pages
 - A playbook for your own setups
 - CSV export, a JSON backup, and a print view (use the browser's Save as PDF)
@@ -64,7 +64,7 @@ Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#56
 - No broker connection. Import a CSV or type the fill.
 - No AI review of the checklist.
 - The TradingView box is a chart for the fill you logged. Scroll it back to the entry time shown on the trade.
-- The news tab is a snapshot stored with the app, not a live calendar. Figures that were not sourced are left blank.
+- Saved news releases come from a snapshot stored with the app. Missing figures are left blank.
 
 ## Where the data lives
 
