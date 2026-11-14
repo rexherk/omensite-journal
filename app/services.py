@@ -39,10 +39,11 @@ from app.instruments import future_root, parse_symbol, spec_for
 from app.news_data import build_events
 from app.paths import import_dir, upload_path
 from app.present import equity_svg, sample_fill_chart
+from app.equity import RULE_PROFILES, TOPSTEP_EOD, combine_rules, equity_chart
 from app.sample_data import (
     CHALLENGE_END, CHALLENGE_START, DEMO_EMAIL, DEMO_FUNDED_NAME, DEMO_NOTE, DEMO_PROP,
-    DEMO_SECOND_COMBINE, FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, SECOND_COMBINE_START,
-    demo_challenge, demo_ict_context, demo_trade_plan, sample_trades,
+    DEMO_SECOND_COMBINE, DEMO_COMBINE_RENAMES, FORMER_DEMO_PROP_NAMES, LEGACY_DEMO_PROP, SECOND_COMBINE_START,
+    demo_account_number, demo_challenge, demo_ict_context, demo_trade_plan, sample_trades,
 )
 from app.services_error import JournalError
 from app import db
@@ -806,8 +807,12 @@ def _demo_trades_to_update(conn, user_id: int) -> list[dict]:
 def demo_needs_refresh(conn, user_id: int, through: date) -> bool:
     if db.sample_count(conn, user_id, DEMO_NOTE) < len(sample_trades(through)) or _demo_trades_to_update(conn, user_id):
         return True
-    names = {row["name"] for row in db.accounts(conn, user_id)}
-    return not {DEMO_FUNDED_NAME, DEMO_SECOND_COMBINE}.issubset(names) or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
+    accounts = db.accounts(conn, user_id)
+    if any(row["name"] in {DEMO_PROP["name"], DEMO_SECOND_COMBINE}
+           and row.get("rule_profile") != TOPSTEP_EOD for row in accounts):
+        return True
+    names = {row["name"] for row in accounts}
+    return not {DEMO_PROP["name"], DEMO_FUNDED_NAME, DEMO_SECOND_COMBINE}.issubset(names) or not names.isdisjoint(FORMER_DEMO_PROP_NAMES)
 
 
 def open_demo(conn, through: date) -> int:
@@ -828,6 +833,14 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
     existing = db.sample_count(conn, user_id, DEMO_NOTE)
     to_update = _demo_trades_to_update(conn, user_id)
     accounts = db.accounts(conn, user_id)
+    for account in accounts:
+        if account["name"] in DEMO_COMBINE_RENAMES:
+            name = DEMO_COMBINE_RENAMES[account["name"]]
+            conn.execute("UPDATE accounts SET name = ? WHERE user_id = ? AND id = ?",
+                         (name, user_id, account["id"]))
+            account["name"] = name
+        if account["name"] in {DEMO_PROP["name"], DEMO_SECOND_COMBINE} and account.get("rule_profile") != TOPSTEP_EOD:
+            db.set_account_rules(conn, user_id, account["id"], TOPSTEP_EOD)
     legacy = next((row for row in accounts if row["name"] in FORMER_DEMO_PROP_NAMES), None)
     account_ids = {row["name"]: row["id"] for row in accounts}
     has_second = DEMO_SECOND_COMBINE in account_ids
@@ -854,6 +867,7 @@ def _load_demo_sample(conn, user: dict, through: date) -> None:
                 DEMO_PROP["daily_loss_limit"], DEMO_PROP["trailing_drawdown"], DEMO_PROP["profit_target"],
             )
             db.set_consistency(conn, user_id, account_ids[name], DEMO_PROP["consistency_pct"])
+        db.set_account_rules(conn, user_id, account_ids[name], TOPSTEP_EOD)
     if legacy is not None or not existing:
         db.set_consistency(conn, user_id, account_ids[first_combine], DEMO_PROP["consistency_pct"])
     if not has_funded:
@@ -986,10 +1000,17 @@ def _optional_number(form, key: str, fallback):
 
 def dashboard_context(conn, user: dict, account_id: int | None = None, range_key: str = "all", month_key: str = "") -> dict:
     zone = user_zone(user)
+    accounts = db.accounts(conn, user["id"])
+    selected_account = next((account for account in accounts if account["id"] == account_id), None)
+    show_timeframes = account_id is None or bool(selected_account and selected_account["kind"] == "sim")
+    # Normalize old links and account-switch submissions as well as the visible controls.
+    if not show_timeframes:
+        range_key = "all"
     all_trades = db.trades(conn, user["id"])
     raw = all_trades
     if account_id is not None:
         raw = [trade for trade in raw if trade["account_id"] == account_id]
+    account_trades = raw
     today = datetime.now(zone).date()
     since = None
     if range_key == "7d":
@@ -1003,13 +1024,17 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         raw = [
             trade
             for trade in raw
-            if (trade.get("closed_local") or trade.get("closed_at")
-                or trade.get("opened_local") or trade.get("opened_at") or "")[:10] >= stamp
+            if local_stamp(parse_iso(trade.get("closed_at") or trade.get("opened_at") or trade["created_at"]), zone)[:10] >= stamp
         ]
     tags = db.tags_for_user(conn, user["id"])
     mistakes = db.mistakes_for_user(conn, user["id"])
     events = db.news_events(conn)
+    # Recompute display dates in the current journal zone, including older imports.
     math = _math_rows(raw, mistakes)
+    for row, source in zip(math, raw, strict=True):
+        for key in ("opened_at", "closed_at"):
+            if source.get(key):
+                row[key] = local_stamp(parse_iso(source[key]), zone)
     board = dashboard(math, tags)
     latest = max((trade["closed_at"][:10] for trade in math if trade["is_closed"] and trade["closed_at"]), default=today.isoformat())
     try:
@@ -1031,7 +1056,13 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         item["tags"] = tags.get(item["id"], [])
         item["mistakes"] = mistakes.get(item["id"], [])
         recent.append(item)
-    accounts = db.accounts(conn, user["id"])
+    labels = {DEMO_PROP["name"]: DEMO_PROP["name"], DEMO_FUNDED_NAME: "Topstep Funded",
+              DEMO_SECOND_COMBINE: DEMO_SECOND_COMBINE, "Personal": "Personal", "Sim": "Simulated Trades"}
+    preferred = {name: index for index, name in enumerate(labels)}
+    account_options = [
+        {"value": str(account["id"]), "label": labels.get(account["name"], account["name"])}
+        for account in sorted(accounts, key=lambda item: (preferred.get(item["name"], len(labels)), item["id"]))
+    ]
     if user["email"] == DEMO_EMAIL:
         prop_accounts = [account for account in accounts if account_id in (None, account["id"])]
         props = prop_rows(prop_accounts, _math_rows(all_trades, {}), today)
@@ -1039,11 +1070,21 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
             if row["account"]["name"] == DEMO_PROP["name"]:
                 row["challenge"] = demo_challenge(row)
             elif row["account"]["name"] == DEMO_SECOND_COMBINE:
-                row["challenge"] = {"account_number": "704216XXXX", "passed_on": None}
+                row["challenge"] = {"account_number": demo_account_number(DEMO_SECOND_COMBINE), "passed_on": None}
             elif row["account"]["name"] == DEMO_FUNDED_NAME:
                 row["funded_placeholder"] = True
     else:
         props = prop_rows(accounts, math, today)
+    for row in props:
+        history = [trade for trade in all_trades if trade["account_id"] == row["account"]["id"]]
+        account_chart = equity_chart(history, {trade["id"] for trade in history}, zone, row["account"])
+        if account_chart["rules"] and account_chart["points"]:
+            row["combine_limits"] = account_chart["rules"]
+            row["combine_net"] = account_chart["net_pnl"]
+            row["combine_drawdown"] = account_chart["drawdown"]
+            row["combine_room"] = round(account_chart["net_pnl"] - account_chart["rules"]["current_floor"], 2)
+    chart = equity_chart(account_trades, {trade["id"] for trade in raw}, zone,
+                         selected_account, since=since)
     return {
         "dash": board,
         "calendar": month_calendar(math, selected_month),
@@ -1051,6 +1092,9 @@ def dashboard_context(conn, user: dict, account_id: int | None = None, range_key
         "props": props,
         "recent": recent,
         "equity_svg": equity_svg(board["equity"]),
+        "equity_chart": chart,
+        "account_options": account_options,
+        "show_timeframes": show_timeframes,
         "zone_name": str(zone),
         "accounts": accounts,
         "range_key": range_key if range_key in {"7d", "30d", "mtd", "all"} else "all",
@@ -1550,6 +1594,8 @@ def export_backup(conn, user: dict) -> dict:
                 "daily_loss_limit": row["daily_loss_limit"],
                 "trailing_drawdown": row["trailing_drawdown"],
                 "profit_target": row["profit_target"],
+                "consistency_pct": row.get("consistency_pct"),
+                "rule_profile": row.get("rule_profile"),
             }
             for row in db.accounts(conn, user_id)
         ],
@@ -1612,6 +1658,10 @@ def restore_backup(conn, user: dict, payload: dict) -> int:
                 _optional_float(row.get("trailing_drawdown")),
                 _optional_float(row.get("profit_target")),
             )
+            db.set_consistency(conn, user_id, account_ids[name], _optional_float(row.get("consistency_pct")))
+            profile = row.get("rule_profile")
+            if profile in RULE_PROFILES:
+                db.set_account_rules(conn, user_id, account_ids[name], profile)
         except (TypeError, ValueError) as exc:
             raise JournalError("An account in the backup has a balance that is not a number.") from exc
     for row in payload.get("checklist") or []:
@@ -1798,6 +1848,31 @@ def remove_account_for(conn, user: dict, account_id: int) -> None:
     if any(trade["account_id"] == account_id for trade in db.trades(conn, user["id"])):
         raise JournalError("This account still has trades. Move or delete those trades first.")
     db.delete_account(conn, user["id"], account_id)
+
+
+def confirm_account_rules(conn, user: dict, account_id: int, form) -> None:
+    account = db.account(conn, user["id"], account_id)
+    if account is None:
+        raise JournalError("Account not found.")
+    if account["kind"] != "prop":
+        raise JournalError("Trading Combine rules apply to a prop account.")
+    profile = _one(form, "rule_profile")
+    for key, label in (("starting_balance", "Starting balance"), ("profit_target", "Profit target"),
+                       ("trailing_drawdown", "Maximum Loss Limit"), ("daily_loss_limit", "Daily loss limit"),
+                       ("consistency_pct", "Consistency percentage")):
+        account[key] = _number(_one(form, key), label, allow_zero=key == "starting_balance")
+    if profile:
+        account["rule_profile"] = profile
+        rules, error = combine_rules(account)
+        if rules is None:
+            raise JournalError(error or "Select a verified Topstep Combine plan.")
+    conn.execute(
+        """UPDATE accounts SET starting_balance = ?, profit_target = ?, trailing_drawdown = ?,
+           daily_loss_limit = ?, consistency_pct = ? WHERE user_id = ? AND id = ?""",
+        (account["starting_balance"] or 0, account["profit_target"], account["trailing_drawdown"],
+         account["daily_loss_limit"], account["consistency_pct"], user["id"], account_id),
+    )
+    db.set_account_rules(conn, user["id"], account_id, profile or None)
 
 
 def add_checklist_item(conn, user: dict, label: str) -> None:

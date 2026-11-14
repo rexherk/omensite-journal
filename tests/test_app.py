@@ -211,7 +211,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(demo.status_code, 200)
         self.assertIn("Demo workspace", demo.text)
         self.assertIn("Sample data", demo.text)
-        self.assertIn("Topstep 50k Combine", demo.text)
+        self.assertIn("Topstep 50K Combine #XXXX226", demo.text)
         self.assertEqual(self.client.cookies.get("omensite_session"), self.session)
         self.assertTrue(self.client.cookies.get("omensite_demo"))
         token = csrf_from(demo.text)
@@ -385,11 +385,13 @@ class AppTests(unittest.TestCase):
             conn.execute("UPDATE trades SET account_id = ? WHERE user_id = ? AND notes = ?",
                          (account_id, user_id, DEMO_NOTE))
 
-        # The completed account stays visible even with a range that excludes its fills.
+        # Old range links still show the completed Combine's full history.
         demo = self.client.get("/", params={"range": "mtd", "account": account_id})
         self.assertEqual(demo.status_code, 200)
-        self.assertIn("Topstep 50k Combine", demo.text)
-        self.assertRegex(demo.text, r"Simulated Trading Combine · Account \d+XXXX · Passed Oct 13, 2026")
+        self.assertIn("Topstep 50K Combine #XXXX226", demo.text)
+        self.assertRegex(demo.text, r'Account XXXX\d{3}</p>')
+        self.assertNotIn("Simulated Trading Combine", demo.text)
+        self.assertIn('title="Passed Oct 13, 2026"', demo.text)
         self.assertIn("$53,135.00", demo.text)
 
         with db.session() as conn:
@@ -418,10 +420,10 @@ class AppTests(unittest.TestCase):
             conn.execute("UPDATE accounts SET name = ? WHERE user_id = ? AND id = ?",
                          (previous_name, user_id, account_id))
         renamed = self.client.get("/")
-        self.assertIn("Topstep 50k Combine", renamed.text)
+        self.assertIn(DEMO_PROP["name"], renamed.text)
         self.assertNotIn(previous_name, renamed.text)
         with db.session() as conn:
-            self.assertEqual(db.account(conn, user_id, account_id)["name"], "Topstep 50k Combine")
+            self.assertEqual(db.account(conn, user_id, account_id)["name"], DEMO_PROP["name"])
             self.assertEqual({row["id"]: row["account_id"] for row in db.trades(conn, user_id)},
                              {row["id"]: row["account_id"] for row in rows})
 
@@ -503,6 +505,43 @@ class AppTests(unittest.TestCase):
                 with db.session() as conn:
                     new_rows = [row for row in db.trades(conn, user_id) if row["closed_day"] == "2026-11-10"]
                 self.assertEqual([row["account_id"] for row in new_rows], [second_id])
+
+    def test_demo_combine_number_names_preserve_accounts_and_trades(self):
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_COMBINE_RENAMES
+
+        with tempfile.TemporaryDirectory() as data, patch.dict(os.environ, {"OMENSITE_DATA": data}), TestClient(app) as demo:
+            with patch("app.main.sample_through", return_value=date(2026, 11, 13)):
+                demo.get("/demo").raise_for_status()
+                with db.session() as conn:
+                    user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                    accounts = db.accounts(conn, user_id)
+                    ids = {a["name"]: a["id"] for a in accounts}
+                    trades = db.many(conn, "SELECT * FROM trades WHERE user_id = ? ORDER BY id", (user_id,))
+                    fills = {t["id"]: db.legs(conn, t["id"]) for t in trades}
+                    for old_name, name in DEMO_COMBINE_RENAMES.items():
+                        conn.execute("UPDATE accounts SET name = ? WHERE user_id = ? AND id = ?",
+                                     (old_name, user_id, ids[name]))
+
+                # An existing session migrates both names in place, and reopening is idempotent.
+                demo.get("/").raise_for_status()
+                demo.get("/demo").raise_for_status()
+                with db.session() as conn:
+                    self.assertEqual(db.accounts(conn, user_id), accounts)
+                    self.assertEqual(db.many(conn, "SELECT * FROM trades WHERE user_id = ? ORDER BY id", (user_id,)), trades)
+                    self.assertEqual({t["id"]: db.legs(conn, t["id"]) for t in trades}, fills)
+
+                for old_name, name in DEMO_COMBINE_RENAMES.items():
+                    home = demo.get("/", params={"account": ids[name]}).raise_for_status().text
+                    self.assertIn(f'>{name}</option>', home)
+                    self.assertIn(f'>{name}</h3>', home)
+                    self.assertNotIn(f'>{old_name}</', home)
+                    history = demo.get("/trades", params={"account": ids[name]}).raise_for_status().text
+                    self.assertIn(name, history)
+                    trade_id = next(t["id"] for t in trades if t["account_id"] == ids[name])
+                    self.assertIn(name, demo.get(f"/trades/{trade_id}").raise_for_status().text)
+                exported = demo.get("/export/backup").raise_for_status().json()
+                self.assertEqual({a["name"] for a in exported["accounts"]}, set(ids))
 
     def test_demo_review_chart_uses_saved_fills_and_preserves_history(self):
         from app import db
@@ -611,9 +650,9 @@ class AppTests(unittest.TestCase):
 
         # An existing demo session acquires the option without reseeding its fills.
         dashboard = self.client.get("/")
-        link = re.search(r'href="(/\?account=(\d+)&range=all)">Topstep 50k Funded</a>', dashboard.text)
+        link = re.search(r'<option value="(\d+)"[^>]*>Topstep Funded</option>', dashboard.text)
         self.assertIsNotNone(link)
-        calendar = self.client.get(link[1] + "&month=2026-10")
+        calendar = self.client.get("/", params={"account": link[1], "month": "2026-10", "range": "all"})
         days = re.findall(r'data-date="[^"]+" data-pnl="([^"]+)" data-trades="([^"]+)"', calendar.text)
         self.assertEqual(len(days), 31)
         self.assertTrue(all(float(pnl) == 0 and count == "0" for pnl, count in days))
@@ -621,10 +660,131 @@ class AppTests(unittest.TestCase):
         self.client.get("/demo").raise_for_status()
         with db.session() as conn:
             funded = [row for row in db.accounts(conn, user_id) if row["name"] == DEMO_FUNDED_NAME]
-            self.assertEqual([row["id"] for row in funded], [int(link[2])])
+            self.assertEqual([row["id"] for row in funded], [int(link[1])])
             trades = db.trades(conn, user_id)
             self.assertEqual({row["id"] for row in trades}, trade_ids)
             self.assertTrue(all(row["account_id"] != funded[0]["id"] for row in trades))
+
+
+    def test_dashboard_account_dropdown_dates_limits_and_all_ranges(self):
+        import json
+        from zoneinfo import ZoneInfo
+        from app import db
+        from app.sample_data import DEMO_EMAIL, DEMO_PROP, DEMO_SECOND_COMBINE, DEMO_FUNDED_NAME
+
+        class Today(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 11, 14, 12, tzinfo=ZoneInfo("America/New_York")).astimezone(tz)
+
+        with tempfile.TemporaryDirectory() as data, patch.dict(os.environ, {"OMENSITE_DATA": data}), TestClient(app) as demo:
+            with patch("app.main.sample_through", return_value=date(2026, 11, 13)), patch("app.services.datetime", Today):
+                html = demo.get("/demo").text
+                self.assertEqual(html.count('select name="account"'), 1)
+                options = re.search(r'<select name="account">(.*?)</select>', html, re.S)[1]
+                self.assertEqual(re.findall(r'>([^<>]+)</option>',options),
+                                 ["All Accounts",DEMO_PROP["name"],"Topstep Funded",DEMO_SECOND_COMBINE,"Personal","Simulated Trades"])
+                masked_numbers = re.findall(r'Account (XXXX\d{3})</p>',html)
+                self.assertEqual(len(set(masked_numbers)),2)
+                self.assertEqual(masked_numbers,re.findall(r'Account (XXXX\d{3})</p>',demo.get('/').text))
+                self.assertNotIn('Simulated Trading Combine',html)
+                with db.session() as conn:
+                    user_id = db.user_by_email(conn, DEMO_EMAIL)["id"]
+                    accounts = {a["name"]:a["id"] for a in db.accounts(conn,user_id)}
+                    records = db.trades(conn,user_id)
+                original_ids = [t["id"] for t in records]
+                for selection in ("", str(accounts[DEMO_PROP["name"]]), str(accounts[DEMO_FUNDED_NAME]),
+                                  str(accounts[DEMO_SECOND_COMBINE]), str(accounts["Personal"]), str(accounts["Sim"])):
+                    for range_key, cutoff in (("all",None),("7d","2026-11-08"),("30d","2026-10-16"),("mtd","2026-11-01")):
+                        with self.subTest(account=selection,range=range_key):
+                            can_filter_time = selection in ("", str(accounts["Sim"]))
+                            expected = [r for r in records if not selection or r["account_id"] == int(selection)]
+                            if cutoff and can_filter_time:
+                                expected = [r for r in expected if r["closed_local"][:10] >= cutoff]
+                            response = demo.get("/api/dashboard/equity",params={"account":selection,"range":range_key})
+                            self.assertEqual(response.status_code,200)
+                            self.assertEqual(response.headers["Cache-Control"],"private, no-store")
+                            chart = response.json()
+                            self.assertEqual({p["id"] for p in chart["points"]},{r["id"] for r in expected})
+                            self.assertAlmostEqual(chart["net_pnl"],sum(r["net_pnl"] for r in expected))
+                            for point in chart["points"]:
+                                record = next(r for r in expected if r["id"] == point["id"])
+                                self.assertEqual(point["date"],record["closed_local"][:10])
+                                self.assertEqual(point["time"],int(datetime.fromisoformat(record["closed_at"].replace("Z","+00:00")).timestamp()*1000))
+                            page = demo.get("/",params={"account":selection,"range":range_key}).text
+                            embedded = json.loads(re.search(r'data-equity-data>(.*?)</script>',page,re.S)[1]) if expected else None
+                            if embedded:
+                                self.assertEqual(embedded["points"],chart["points"])
+                            controls = re.search(r'data-account-filter>(.*?)</form>',page,re.S)[1]
+                            if can_filter_time:
+                                for key,label in (("7d","7D"),("30d","30D"),("mtd","MTD"),("all","All")):
+                                    suffix = "&account=" + selection if selection else ""
+                                    self.assertIn(f'href="/?range={key}{suffix}">{label}</a>', controls)
+                            else:
+                                self.assertNotIn('class="pill-toggle',controls)
+                                self.assertIn('name="range" value="all"',controls)
+                                self.assertIsNone(chart["since"])
+                            if selection in ("",str(accounts["Sim"]),str(accounts["Personal"])):
+                                self.assertIsNone(chart["rules"])
+                                self.assertEqual(chart["limits"],[])
+                for name, net, adjusted, start, end in (
+                    (DEMO_PROP["name"],3135,3000,"2026-10-01","2026-10-13"),
+                    (DEMO_SECOND_COMBINE,2426.5,3399.10,"2026-11-09","2026-11-13"),
+                ):
+                    chart = demo.get("/api/dashboard/equity",params={"account":accounts[name]}).json()
+                    self.assertEqual(chart["net_pnl"],net)
+                    self.assertEqual(chart["rules"]["base_target"],3000)
+                    self.assertEqual(chart["rules"]["current_target"],adjusted)
+                    self.assertEqual(chart["rules"]["current_balance_floor"],50000)
+                    self.assertEqual(chart["points"][0]["date"],start)
+                    self.assertEqual(chart["points"][-1]["date"],end)
+                    self.assertEqual({p["account_id"] for p in chart["points"]},{accounts[name]})
+                with db.session() as conn:
+                    from app.services import dashboard_context
+                    context = dashboard_context(conn, db.user_by_id(conn,user_id))
+                    second = next(p for p in context["props"] if p["account"]["id"] == accounts[DEMO_SECOND_COMBINE])
+                    self.assertEqual(second["combine_room"],2426.5)
+                    self.assertEqual(second["combine_drawdown"],192)
+                with db.session() as conn:
+                    self.assertEqual(original_ids,[t["id"] for t in db.trades(conn,user_id)])
+                demo.cookies.clear()
+                self.assertEqual(demo.get("/api/dashboard/equity",follow_redirects=False).status_code,303)
+
+    def test_account_rules_are_explicit_scoped_and_survive_backup(self):
+        from app import db
+        from app.equity import TOPSTEP_EOD
+        from app.services import restore_backup, export_backup
+        token = self.sign_in_as("equity-owner@example.com")
+        created = self.client.post("/settings/accounts",data={
+            "csrf":token,"name":"Topstep Combine test","kind":"prop","starting_balance":"50000",
+            "profit_target":"3000","trailing_drawdown":"2000","daily_loss_limit":""
+        })
+        self.assertEqual(created.status_code,200)
+        with db.session() as conn:
+            owner = db.user_by_email(conn,"equity-owner@example.com")
+            account = next(a for a in db.accounts(conn,owner["id"]) if a["name"] == "Topstep Combine test")
+        missing = self.client.get("/api/dashboard/equity",params={"account":account["id"]}).json()
+        self.assertIsNone(missing["rules"])
+        self.assertTrue(missing["warning"])
+        config = {"csrf":token,"rule_profile":TOPSTEP_EOD,"starting_balance":"50000",
+                  "profit_target":"3000","trailing_drawdown":"2000","consistency_pct":"55","daily_loss_limit":""}
+        good = self.client.post(f'/settings/accounts/{account["id"]}/rules',data=config)
+        self.assertEqual(good.status_code,200)
+        self.assertIsNotNone(self.client.get("/api/dashboard/equity",params={"account":account["id"]}).json()["rules"])
+        invalid = self.client.post(f'/settings/accounts/{account["id"]}/rules',data={**config,"profit_target":"5000"})
+        self.assertEqual(invalid.status_code,400)
+        with db.session() as conn:
+            self.assertEqual(db.account(conn,owner["id"],account["id"])["profit_target"],3000)
+            backup = export_backup(conn,owner)
+        other_token = self.sign_in_as("equity-other@example.com")
+        denied = self.client.post(f'/settings/accounts/{account["id"]}/rules',data={**config,"csrf":other_token})
+        self.assertEqual(denied.status_code,400)
+        with db.session() as conn:
+            other = db.user_by_email(conn,"equity-other@example.com")
+            restore_backup(conn,other,backup)
+            restored = next(a for a in db.accounts(conn,other["id"]) if a["name"] == account["name"])
+            self.assertEqual(restored["rule_profile"],TOPSTEP_EOD)
+            self.assertEqual(restored["consistency_pct"],55)
 
     def test_downloads_disable_shared_caching(self):
         for path in ("/export/trades", "/export/backup", "/export.csv", "/export.json"):

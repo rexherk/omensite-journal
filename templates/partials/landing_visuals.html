@@ -30,7 +30,7 @@
 
 
 {% macro dashboard() -%}
-<div class="preview-dashboard"><aside class="preview-side"><div class="preview-brand">{{ logo('/home') }}</div><div class="preview-add">＋ &nbsp; Log a trade</div>{% for title, symbol in [('Dashboard','grid'),('Trades','journal'),('Reviews','chart'),('Report','chart'),('Setups','book'),('Plan','target'),('News','calendar'),('Settings','case')] %}<div class="preview-nav {{ 'selected' if loop.first else '' }}">{{ icon(symbol) }} {{ title }}</div>{% endfor %}<div class="preview-side-bottom">Sample trader</div></aside><div class="preview-main"><div class="preview-heading"><strong>Dashboard</strong><span>All accounts</span></div><div class="preview-meta">Your trading, at a glance. <span>Sample data · Read-only</span></div>{{ overview(sample.dash, sample.calendar, sample.equity_svg, preview=true) }}</div></div>
+<div class="preview-dashboard"><aside class="preview-side"><div class="preview-brand">{{ logo('/home') }}</div><div class="preview-add">＋ &nbsp; Log a trade</div>{% for title, symbol in [('Dashboard','grid'),('Trades','journal'),('Reviews','chart'),('Report','chart'),('Setups','book'),('Plan','target'),('News','calendar'),('Settings','case')] %}<div class="preview-nav {{ 'selected' if loop.first else '' }}">{{ icon(symbol) }} {{ title }}</div>{% endfor %}<div class="preview-side-bottom">Sample trader</div></aside><div class="preview-main"><div class="preview-heading"><strong>Dashboard</strong><span>All accounts</span></div><div class="preview-meta">Your trading, at a glance. <span>Sample data · Read-only</span></div>{{ overview(sample.dash, sample.calendar, sample.equity_svg, preview=true, chart=sample.equity_chart) }}</div></div>
 {%- endmacro %}
 
 {% macro trade_table() -%}
@@ -55,7 +55,7 @@
 {% set account = row.account %}
 <div class="art-window prop-art">
   <div class="art-toolbar"><span class="window-dots"><i></i><i></i><i></i></span><strong>Prop account overview</strong><small>Sample account</small></div>
-  <div class="prop-name"><span>{{ icon('case') }}</span><div><h4>{{ account.name }}</h4><p>Trading Combine · {{ row.challenge.account_number }}</p></div><b>{{ 'Passed' if row.challenge.passed_on else 'In progress' }}</b></div>
+  <div class="prop-name"><span>{{ icon('case') }}</span><div><h4>{{ account.name }}</h4><p>Account {{ row.challenge.account_number }}</p></div><b>{{ 'Passed' if row.challenge.passed_on else 'In progress' }}</b></div>
   <div class="prop-balance"><small>Account equity</small><strong>{{ row.equity | money }}</strong><span class="{{ row.total_pnl | pnl_class }}">{{ '+' if row.total_pnl > 0 else '' }}{{ row.total_pnl | money }}</span></div>
   {% for name, used, limit in [
     ('Profit target', row.total_pnl, account.profit_target),

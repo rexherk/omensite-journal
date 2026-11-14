@@ -34,6 +34,27 @@
     {% endif %}
     <button class="ghost" type="submit">Delete</button>
   </form>
+  {% if account.kind == "prop" %}
+  <details class="journal-disclosure">
+    <summary>Plan and limits · {{ account.name }}</summary>
+    <form method="post" action="/settings/accounts/{{ account.id }}/rules">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Verified plan
+        <select name="rule_profile">
+          <option value="">Unconfirmed / other plan</option>
+          {% for key, label in account_rule_profiles.items() %}<option value="{{ key }}" {% if account.rule_profile == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Account size / starting balance<input name="starting_balance" value="{{ account.starting_balance | plain }}" inputmode="decimal"></label>
+      <label>Base profit target<input name="profit_target" value="{{ account.profit_target | plain }}" inputmode="decimal"></label>
+      <label>Maximum Loss Limit amount<input name="trailing_drawdown" value="{{ account.trailing_drawdown | plain }}" inputmode="decimal"></label>
+      <label>Configured daily loss limit<input name="daily_loss_limit" value="{{ account.daily_loss_limit | plain }}" inputmode="decimal"></label>
+      <label>Consistency percentage<input name="consistency_pct" value="{{ account.consistency_pct | plain }}" inputmode="decimal"></label>
+      <p class="muted">Enter the settings from this account’s plan. The chart shows limits when these settings match the verified plan.</p>
+      <button type="submit">Save account rules</button>
+    </form>
+  </details>
+  {% endif %}
   {% endfor %}
   <form method="post" action="/settings/accounts">
     <input type="hidden" name="csrf" value="{{ csrf }}">

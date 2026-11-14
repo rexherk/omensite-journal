@@ -1,0 +1,42 @@
+<div class="equity-heading">
+  <div><h3>{{ 'Account balance' if chart.rules else 'Cumulative net P&L' }}</h3><p>USD · Trade close dates · {{ chart.timezone }}</p></div>
+  <strong class="{{ chart.net_pnl | pnl_class }}">{% if chart.rules and not chart.points %}—{% else %}{{ (chart.rules.size + chart.baseline + chart.net_pnl if chart.rules else chart.net_pnl) | money }}{% endif %}</strong>
+</div>
+{% if chart.warning %}
+<p class="equity-notice">{{ chart.warning }} <a href="/settings">Account settings</a></p>
+{% endif %}
+{% if chart.points %}
+<div class="equity-chart" data-equity-chart>
+  <script type="application/json" data-equity-data>{{ chart | tojson }}</script>
+  <svg class="equity-plot" role="img" aria-label="Cumulative net profit and loss and realized drawdown in US dollars by trade close date"></svg>
+  <div class="equity-legend" aria-label="Chart legend">
+    <span class="legend-net">{{ 'Balance' if chart.rules else 'Net P&L' }}</span><span class="legend-drawdown">Drawdown below peak</span>
+    {% if chart.rules %}<span class="legend-target">Profit target</span><span class="legend-limit">Maximum Loss Limit</span>{% endif %}
+  </div>
+  <div class="equity-tooltip" role="status" hidden></div>
+  <p class="equity-chart-hint">Point to a trade, tap it, or use the arrow keys on the chart for exact amounts.</p>
+  <noscript><p>Enable JavaScript to explore the chart. Net P&amp;L {{ chart.net_pnl | money }}. Current closed-trade drawdown {{ chart.drawdown | money }}.</p></noscript>
+</div>
+{% else %}<p class="equity-empty">No closed trades in this account and timeframe.</p>{% endif %}
+<p class="equity-footnote">{% if chart.rules %}Balance includes the account’s starting size and earlier recorded trades.{% else %}Net P&amp;L starts at zero for the selected timeframe.{% endif %} The shaded gap below the peak shows closed-trade drawdown.</p>
+{% if chart.rules %}
+{% set rules = chart.rules %}
+<details class="equity-rules">
+  <summary>Account rules &amp; limits <span>{{ rules.size | money }} · {{ 'EOD trailing' if rules.trailing else 'Static' }}</span></summary>
+  <p class="equity-plan">{{ rules.label }}</p>
+  <dl>
+    <div><dt>Profit target</dt><dd>{{ rules.base_target | money }}</dd></div>
+    <div><dt>Maximum Loss Limit</dt><dd>{{ rules.loss_amount | money }} <small>{{ 'EOD trailing' if rules.trailing else 'Static' }}</small></dd></div>
+    {% if rules.current_balance_floor is defined %}<div><dt>Current minimum balance</dt><dd>{{ rules.current_balance_floor | money }}</dd></div>{% endif %}
+    <div><dt>Consistency guideline</dt><dd>{{ rules.consistency_pct | plain }}% <small>Best day under {{ rules.best_day_guideline | default(rules.base_target * rules.consistency_pct / 100) | money }}</small></dd></div>
+    {% if rules.current_target is defined and rules.current_target > rules.base_target %}<div><dt>Consistency-adjusted target</dt><dd>{{ rules.current_target | money }}</dd></div>{% endif %}
+    {% if rules.daily_loss_limit %}<div><dt>Configured daily loss limit</dt><dd>{{ rules.daily_loss_limit | money }}</dd></div>{% endif %}
+  </dl>
+<p class="equity-footnote">
+  {% if chart.rules.trailing %}The loss floor updates after the 3:10 PM Chicago session close, never falls, and locks at the starting balance.{% else %}The static loss floor stays fixed below the starting balance.{% endif %}
+  The limit and target lines use account balances, including earlier account history.
+  Calculations use closed trades. Topstep also monitors unrealized P&amp;L during each trade.
+</p>
+<p class="equity-sources">Rules verified November 14, 2026. {% for source in chart.rules.sources %}<a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.label }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+</details>
+{% endif %}

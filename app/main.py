@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
@@ -53,6 +53,7 @@ from app.services import (
     checklist_for_form,
     confirm_import,
     create_account_for,
+    confirm_account_rules,
     dashboard_context,
     decorate_trades,
     demo_needs_refresh,
@@ -89,6 +90,7 @@ from app.services import (
     user_zone,
 )
 from app.services_error import JournalError as FormError
+from app.equity import RULE_PROFILES
 
 DEMO_COOKIE = "omensite_demo"
 
@@ -101,6 +103,7 @@ templates.env.filters["pct"] = pct
 templates.env.filters["factor"] = factor
 templates.env.filters["hold"] = hold
 templates.env.filters["plain"] = plain
+templates.env.globals["account_rule_profiles"] = RULE_PROFILES
 def shell_context(request: Request) -> dict:
     news = None
     if not request.url.path.startswith("/static"):
@@ -478,6 +481,10 @@ async def logout(request: Request):
 def dashboard_page(request: Request):
     if request.state.user is None:
         return render(request, "home.html")
+    return render(request, "dashboard.html", **dashboard_request_context(request))
+
+
+def dashboard_request_context(request: Request):
     user = current(request)
     range_key = request.query_params.get("range", "all")
     if range_key not in {"7d", "30d", "mtd", "all"}:
@@ -487,8 +494,13 @@ def dashboard_page(request: Request):
     with db.session() as conn:
         if account_id is not None and db.account(conn, user["id"], account_id) is None:
             account_id = None
-        ctx = dashboard_context(conn, user, account_id, range_key, request.query_params.get("month", ""))
-    return render(request, "dashboard.html", **ctx)
+        return dashboard_context(conn, user, account_id, range_key, request.query_params.get("month", ""))
+
+
+@app.get("/api/dashboard/equity")
+def dashboard_equity(request: Request):
+    chart = dashboard_request_context(request)["equity_chart"]
+    return JSONResponse(chart, headers={"Cache-Control": "private, no-store"})
 
 
 @app.get("/trades")
@@ -994,6 +1006,22 @@ async def settings_account_delete(request: Request, account_id: int):
             checks = db.checklist(conn, user["id"])
         return render(request, "settings.html", 400, accounts=accounts, checks=checks, error=str(exc))
     return RedirectResponse("/settings?notice=deleted", status_code=303)
+
+
+@app.post("/settings/accounts/{account_id}/rules")
+async def settings_account_rules(request: Request, account_id: int):
+    user = current(request)
+    form = await read_form(request)
+    assert_csrf(request, form)
+    try:
+        with db.session() as conn:
+            confirm_account_rules(conn, user, account_id, form)
+    except FormError as exc:
+        with db.session() as conn:
+            accounts = db.accounts(conn, user["id"])
+            checks = db.checklist(conn, user["id"])
+        return render(request, "settings.html", 400, accounts=accounts, checks=checks, error=str(exc))
+    return RedirectResponse("/settings?notice=account", status_code=303)
 
 
 @app.post("/settings/checks")

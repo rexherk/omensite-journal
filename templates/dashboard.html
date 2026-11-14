@@ -36,15 +36,7 @@
   </div>
 </div>
 
-<form class="pill-row" method="get" action="/">
-  <a class="pill-toggle {% if not account_filter %}on{% endif %}" href="/?range={{ range_key }}">All accounts</a>
-  {% for account in accounts %}
-  <a class="pill-toggle {% if account_filter == account.id|string %}on{% endif %}" href="/?account={{ account.id }}&range={{ range_key }}">{{ account.name }}</a>
-  {% endfor %}
-  {% for key, label in [("7d", "7D"), ("30d", "30D"), ("mtd", "MTD"), ("all", "All")] %}
-  <a class="pill-toggle {% if range_key == key %}on{% endif %}" href="/?range={{ key }}{% if account_filter %}&account={{ account_filter }}{% endif %}">{{ label }}</a>
-  {% endfor %}
-</form>
+
 
 {% if dash.closed_count == 0 and dash.open_count == 0 %}
 <section class="panel empty-hero">
@@ -64,7 +56,26 @@
 <section class="panel"><p>{{ dash.open_count }} open {{ "trade" if dash.open_count == 1 else "trades" }}. Closed stats appear when a position is flat.</p></section>
 {% endif %}
 
-{{ overview(dash, calendar, equity_svg, account_filter=account_filter, range_key=range_key) }}
+{% call overview(dash, calendar, equity_svg, account_filter=account_filter, range_key=range_key, chart=equity_chart) %}
+<form class="pill-row dashboard-filters" method="get" action="/" data-account-filter>
+  <input type="hidden" name="range" value="{{ range_key }}">
+  {% if request.query_params.get('month') %}<input type="hidden" name="month" value="{{ calendar.key }}">{% endif %}
+  <label class="dashboard-account">Account
+    <select name="account">
+      <option value="" {% if not account_filter %}selected{% endif %}>All Accounts</option>
+      {% for option in account_options %}
+      <option value="{{ option.value }}" {% if account_filter == option.value %}selected{% endif %}>{{ option.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit">Apply</button></noscript>
+  {% if show_timeframes %}
+  {% for key, label in [("7d", "7D"), ("30d", "30D"), ("mtd", "MTD"), ("all", "All")] %}
+  <a class="pill-toggle {% if range_key == key %}on{% endif %}" href="/?range={{ key }}{% if account_filter %}&account={{ account_filter }}{% endif %}">{{ label }}</a>
+  {% endfor %}
+  {% endif %}
+</form>
+{% endcall %}
 
 <section class="dashboard-details"><div class="panel-label"><h2>The details behind your performance</h2></div>
 <section class="stats">
@@ -93,32 +104,18 @@
 </section>
 <section class="panel" id="prop-accounts">
   <h2>Prop accounts</h2>
-  {% if demo_mode %}
-  <form class="filters" method="get" action="/#prop-accounts">
-    <input type="hidden" name="range" value="all">
-    <label>Prop account
-      <select name="account">
-        <option value="">All accounts</option>
-        {% for account in accounts if account.kind == "prop" %}
-        <option value="{{ account.id }}" {% if account_filter == account.id|string %}selected{% endif %}>{{ account.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <button class="ghost" type="submit">View account</button>
-  </form>
-  {% endif %}
   {% if props %}
     {% for row in props %}
     <article class="prop-card">
       <div class="panel-label">
         <h3>{{ row.account.name }}</h3>
         {% if row.challenge %}
-        {% if row.challenge.passed_on %}<span class="pill-tag good">Passed</span>
+        {% if row.challenge.passed_on %}<span class="pill-tag good" title="Passed {{ row.challenge.passed_on.strftime('%b %d, %Y') }}">Passed</span>
         {% else %}<span class="pill-tag">In progress</span>{% endif %}
         {% endif %}
       </div>
       {% if row.challenge %}
-      <p class="muted">Simulated Trading Combine · Account {{ row.challenge.account_number }}{% if row.challenge.passed_on %} · Passed {{ row.challenge.passed_on.strftime('%b %d, %Y') }}{% endif %}</p>
+      <p class="muted">Account {{ row.challenge.account_number }}</p>
       {% endif %}
       {% if row.challenge and row.challenge.passed_on %}
       <div class="stats challenge-stats">
@@ -128,6 +125,14 @@
       </div>
       {% elif row.funded_placeholder %}
       <p class="muted">No trades recorded.</p>
+      {% elif row.combine_limits %}
+      <div class="stats challenge-stats">
+        <div class="stat"><span>Account net P&amp;L</span><strong class="{{ row.combine_net | pnl_class }}">{{ row.combine_net | money }}</strong></div>
+        <div class="stat"><span>Current minimum balance</span><strong>{{ row.combine_limits.current_balance_floor | money }}</strong></div>
+        <div class="stat"><span>Room above loss floor</span><strong>{{ row.combine_room | money }}</strong></div>
+      </div>
+      <p>Closed-trade drawdown {{ row.combine_drawdown | money }} · Required total profit {{ row.combine_limits.current_target | money }}</p>
+      <p class="muted">Full account history · {{ row.combine_limits.label }} · {{ row.combine_limits.consistency_pct | plain }}% consistency guideline</p>
       {% else %}
       {% if row.account.daily_loss_limit %}
       {% set used = (-row.today_pnl / row.account.daily_loss_limit) if row.today_pnl < 0 else 0 %}

@@ -33,7 +33,7 @@ The server listens on this machine only. To reach it from another device, bind a
 
 The root `Dockerfile` runs the current FastAPI website on `0.0.0.0:$PORT` (8080 by default). Set the readiness path to `/health`. The container requires a managed PostgreSQL connection in `DATABASE_URL`; it refuses to use temporary SQLite storage when that connection is missing.
 
-The PostgreSQL schema is checked in at `migrations/001_initial_postgres.sql`. Startup applies unapplied migrations inside a transaction, guarded by an advisory lock. You can also run `python -m app.migrate` explicitly. The migration is additive and records its version in `schema_migrations`.
+The PostgreSQL schema and additive account-rule migration are checked in under `migrations/`. Startup applies unapplied migrations inside a transaction, guarded by an advisory lock. You can also run `python -m app.migrate` explicitly. Applied versions are recorded in `schema_migrations`; existing account and trade records are preserved.
 
 Use the hosting platform's database attachment to inject `DATABASE_URL` over its private network. Native attachment requires current write access to both the database and repository server; either resource may be shared with you and they may have different owners. Shared connections remain active while that access remains valid. Revealing native connection credentials remains restricted to the database owner.
 
@@ -67,6 +67,12 @@ Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#56
 - Saved news releases come from a snapshot stored with the app. Missing figures are left blank.
 
 ## Where the data lives
+
+Demo Combine names use `Topstep 50K Combine #XXXX123`, identified by their stable masked account number rather than a sequence number. Older demo names are renamed in place without replacing accounts or trades.
+
+The dashboard's Account dropdown filters by saved account ID, with account and timeframe controls between the summary cards and calendar. Timeframe controls apply only to All Accounts and simulated accounts. Other account selections show full history, including when opened from an older range-filtered link. The Equity view plots each closed trade in the journal's configured timezone. Verified Combines use account balances on the USD axis, with target and loss-floor lines. Other selections use cumulative net P&L. Realized drawdown is shaded between the curve and its previous peak in the same graph. Exact net P&L and drawdown remain available in trade tooltips. The same model is available to authenticated users at `GET /api/dashboard/equity?account=<id>&range=all` (also `7d`, `30d`, and `mtd`), with private, non-cacheable responses.
+
+Topstep overlays require a confirmed plan under Settings → Accounts → Plan and limits. The supported profiles are the standard 50K/100K/150K end-of-day trailing Combine and the 50K Static Combine, verified against Topstep's published rules on November 14, 2026. Unconfirmed or conflicting settings suppress overlays. All Accounts never inherits a single account's limits. Range-relative P&L uses the full account history to calculate the loss floor and drawdown. These calculations use recorded closed trades, so they cannot establish intratrade or unrealized-P&L compliance. Migration `002_account_rules_postgres.sql` adds an optional plan field without changing existing trade records.
 
 Without `DATABASE_URL`, the local journal uses SQLite in the `data` folder next to this file. Set `OMENSITE_DATA` to put that folder somewhere else. New uploaded images are stored inside the selected database; existing local chart files remain supported. Each signed-in trader sees only their own records.
 

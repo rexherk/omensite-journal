@@ -8,6 +8,7 @@ from app.analytics import dashboard, month_calendar, prop_rows
 from app.instruments import FUTURES
 from app.news_data import NY, build_events
 from app.present import equity_svg
+from app.equity import equity_chart
 
 
 DEMO_EMAIL = "demo@omensite.journal"
@@ -18,15 +19,19 @@ FORMER_DEMO_PROP_NAMES = (LEGACY_DEMO_PROP, "TopstepX 50K account")
 CHALLENGE_START = date(2026, 10, 1)
 CHALLENGE_END = date(2026, 10, 13)
 SECOND_COMBINE_START = date(2026, 11, 9)
-DEMO_SECOND_COMBINE = "Topstep 50k Combine #2"
+DEMO_SECOND_COMBINE = "Topstep 50K Combine #XXXX155"
 DEMO_PROP = {
-    "name": "Topstep 50k Combine",
+    "name": "Topstep 50K Combine #XXXX226",
     "kind": "prop",
     "starting_balance": 50000,
     "daily_loss_limit": 1000,
     "trailing_drawdown": 2000,
     "profit_target": 3000,
     "consistency_pct": 55,
+}
+DEMO_COMBINE_RENAMES = {
+    "Topstep 50k Combine": DEMO_PROP["name"],
+    "Topstep 50k Combine #2": DEMO_SECOND_COMBINE,
 }
 START = date(2026, 7, 1)
 ROLLING_START = date(2026, 11, 1)
@@ -197,12 +202,17 @@ def _sample_trades(through: date) -> tuple[dict, ...]:
     return tuple(records)
 
 
+def demo_account_number(name: str) -> str:
+    """Read the stable, masked identifier from a demo Combine's canonical name."""
+    return name.rsplit("#", 1)[-1]
+
+
 def demo_challenge(row: dict) -> dict:
     """Label the fixed, completed sample challenge in both demo views."""
     passed = (row["total_pnl"] >= DEMO_PROP["profit_target"]
               and row["best_share"] is not None
               and row["best_share"] <= DEMO_PROP["consistency_pct"] / 100)
-    return {"account_number": "892849XXXX", "passed_on": CHALLENGE_END if passed else None}
+    return {"account_number": demo_account_number(DEMO_PROP["name"]), "passed_on": CHALLENGE_END if passed else None}
 
 
 def sample_overview(through: date | None = None) -> dict:
@@ -217,5 +227,12 @@ def sample_overview(through: date | None = None) -> dict:
                      [dict(trade, account_id=1) for trade in trades if trade["combine"] == DEMO_PROP["name"]],
                      datetime.now(NY).date())[0]
     prop["challenge"] = demo_challenge(prop)
+    chart_trades = [
+        dict(trade, account_id=1 if trade["combine"] == DEMO_PROP["name"] else 2 if trade["combine"] else 0,
+             opened_at=datetime.fromisoformat(trade["opened_at"]).replace(tzinfo=NY).isoformat(),
+             closed_at=datetime.fromisoformat(trade["closed_at"]).replace(tzinfo=NY).isoformat())
+        for trade in trades
+    ]
     return {"dash": board, "calendar": month_calendar(trades, month),
-            "equity_svg": equity_svg(board["equity"]), "trades": recent, "review": review, "prop": prop}
+            "equity_svg": equity_svg(board["equity"]), "trades": recent, "review": review, "prop": prop,
+            "equity_chart": equity_chart(chart_trades, {trade["id"] for trade in trades}, NY)}

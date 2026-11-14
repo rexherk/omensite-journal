@@ -332,6 +332,8 @@ def ensure_user_columns(conn: sqlite3.Connection) -> None:
     accounts = _column_names(conn, "accounts")
     if "consistency_pct" not in accounts:
         conn.execute("ALTER TABLE accounts ADD COLUMN consistency_pct REAL")
+    if "rule_profile" not in accounts:
+        conn.execute("ALTER TABLE accounts ADD COLUMN rule_profile TEXT")
 
 
 def init_db(conn: sqlite3.Connection) -> None:
@@ -339,11 +341,12 @@ def init_db(conn: sqlite3.Connection) -> None:
         # Serialize first-time setup across application workers.
         conn.execute("SELECT 1 FROM pg_advisory_xact_lock(654719032)")
         conn.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-        version = "001_initial"
-        if not conn.execute("SELECT version FROM schema_migrations WHERE version = ?", (version,)).fetchone():
-            schema = Path(__file__).resolve().parent.parent / "migrations" / "001_initial_postgres.sql"
-            conn.executescript(schema.read_text(encoding="utf-8"))
-            conn.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
+        migrations = Path(__file__).resolve().parent.parent / "migrations"
+        for version, filename in (("001_initial", "001_initial_postgres.sql"),
+                                  ("002_account_rules", "002_account_rules_postgres.sql")):
+            if not conn.execute("SELECT version FROM schema_migrations WHERE version = ?", (version,)).fetchone():
+                conn.executescript((migrations / filename).read_text(encoding="utf-8"))
+                conn.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
     else:
         conn.executescript(SCHEMA)
         ensure_user_columns(conn)
@@ -506,6 +509,11 @@ def insert_account(conn, user_id, name, kind, starting, daily, trail, target) ->
 
 def delete_account(conn, user_id: int, account_id: int) -> None:
     conn.execute("DELETE FROM accounts WHERE user_id = ? AND id = ?", (user_id, account_id))
+
+
+def set_account_rules(conn, user_id: int, account_id: int, profile: str | None) -> None:
+    conn.execute("UPDATE accounts SET rule_profile = ? WHERE user_id = ? AND id = ?",
+                 (profile, user_id, account_id))
 
 
 def checklist(conn, user_id: int) -> list[dict]:

@@ -1,4 +1,64 @@
 /* Shared by the actual journal and its public product preview. */
+.dashboard-filters { align-items: center; margin: 0 0 20px; }
+.dashboard-account { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; }
+.dashboard-account select { width: 290px; max-width: 100%; margin: 0; }
+.equity-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 24px 0 18px; }
+.equity-heading h3 { margin: 0; font-size: 16px; }
+.equity-heading p { margin: 6px 0 0; color: var(--oj-muted); font-size: 12px; }
+.equity-heading > strong { font: 600 24px var(--oj-heading); font-variant-numeric: tabular-nums; }
+.equity-rules { padding: 16px; border: 1px solid var(--oj-line); border-radius: 6px; background: var(--oj-surface); }
+.equity-rules summary { cursor: pointer; font-size: 12px; font-weight: 600; }
+.equity-rules summary span { display: inline-block; margin-left: 12px; color: var(--oj-muted); font-weight: 400; }
+.equity-rules[open] summary { margin-bottom: 18px; }
+.equity-plan { margin: 0 0 14px; font-weight: 600; font-size: 13px; }
+.equity-rules dl { display: flex; flex-wrap: wrap; gap: 16px 28px; margin: 0; }
+.equity-rules dt { font-size: 11px; color: var(--oj-muted); }
+.equity-rules dd { margin: 5px 0 0; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.equity-rules small { display: block; margin-top: 4px; font-size: 11px; color: var(--oj-muted); font-weight: 400; }
+.equity-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px 20px; margin: 10px 0 18px; font-size: 11px; }
+.equity-legend span { display: flex; align-items: center; gap: 6px; }
+.equity-legend span::before { content: ''; width: 18px; border-top: 2px solid var(--oj-secondary); }
+.equity-legend .legend-drawdown::before { height: 8px; background: color-mix(in srgb, var(--oj-primary) 18%, transparent); border-color: var(--oj-primary); border-top-style: dashed; }
+.equity-legend .legend-target::before { border-color: var(--oj-gain); border-top-style: dashed; }
+.equity-legend .legend-limit::before { border-color: var(--oj-loss); border-top-style: dashed; }
+.equity-chart { position: relative; width: 100%; min-width: 0; }
+.equity-plot { width: 100%; display: block; overflow: visible; touch-action: pan-y; }
+.equity-plot:focus-visible { outline: 2px solid var(--oj-primary); outline-offset: 4px; border-radius: 4px; }
+.equity-axis { fill: var(--oj-muted); font: 11px var(--oj-font); font-variant-numeric: tabular-nums; }
+.equity-axis-title { fill: var(--oj-ink); font: 500 12px var(--oj-font); }
+.equity-grid { stroke: var(--oj-line); stroke-width: 1; }
+.equity-zero { stroke: var(--oj-line-strong); stroke-width: 1; }
+.equity-net-line { stroke: var(--oj-secondary); stroke-width: 2.5; fill: none; stroke-linejoin: round; }
+.equity-peak-line { stroke: var(--oj-primary); stroke-width: 1; stroke-dasharray: 3 5; stroke-opacity: .55; fill: none; }
+.equity-drawdown-area { fill: var(--oj-primary); fill-opacity: .16; stroke: none; }
+.equity-target-line { stroke: var(--oj-gain); stroke-dasharray: 7 5; stroke-width: 1.5; fill: none; }
+.equity-limit-line { stroke: var(--oj-loss); stroke-dasharray: 6 5; stroke-width: 1.5; fill: none; }
+.equity-line-label { font: 500 11px var(--oj-font); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.equity-target-label { fill: var(--oj-gain); }
+.equity-limit-label { fill: var(--oj-loss); }
+.equity-trade-dot { fill: var(--oj-secondary); }
+.equity-cursor line { stroke: var(--oj-muted); stroke-dasharray: 3 4; }
+.equity-cursor .equity-drawdown-marker { stroke: var(--oj-primary); stroke-width: 3; stroke-dasharray: none; }
+.equity-cursor circle { fill: var(--oj-surface); stroke: var(--oj-secondary); stroke-width: 2; }
+.equity-tooltip { padding: 14px; margin-top: 8px; border: 1px solid var(--oj-line-strong); border-radius: 6px; background: var(--oj-surface); font-size: 12px; }
+.equity-tooltip > strong { display: block; margin-bottom: 10px; }
+.equity-tooltip > div { display: flex; justify-content: space-between; gap: 16px; margin-top: 5px; }
+.equity-tooltip b { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.equity-footnote, .equity-chart-hint, .equity-sources, .equity-notice, .equity-empty { font-size: 12px; line-height: 1.6; color: var(--oj-muted); }
+.equity-sources { font-size: 11px; }
+.equity-notice { padding: 12px 14px; background: var(--oj-accent-soft); border-radius: 5px; }
+.equity-empty { padding: 45px 0; text-align: center; }
+@container (max-width: 480px) {
+  .equity-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .equity-rules { padding: 12px; }
+  .equity-rules dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  .equity-legend { gap: 10px 14px; }
+  .equity-rules summary span { display: block; margin: 6px 0 0; }
+}
+@media (max-width: 480px) {
+  .dashboard-account { width: 100%; }
+  .dashboard-account select { flex: 1; width: auto; min-width: 0; }
+}
 .journal-overview{container-type:inline-size;--overview-line:var(--oj-line);--overview-muted:var(--oj-muted);--accent:var(--oj-secondary);--down:var(--oj-loss);--chart-grid:var(--oj-line);color:var(--oj-ink);font-family:var(--oj-font);margin-bottom:24px}
 .journal-overview *{box-sizing:border-box}
 .overview-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:23px}
