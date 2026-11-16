@@ -22,7 +22,7 @@
   <p class="muted">Signed in as {{ user.email }}. The journal file on this server is the copy every device sees, as long as those devices can reach this server.</p>
 </section>
 
-<section class="panel">
+<section class="panel" id="accounts">
   <h2>Accounts</h2>
   {% for account in accounts %}
   <form method="post" action="/settings/accounts/{{ account.id }}/delete">

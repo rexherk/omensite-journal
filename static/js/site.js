@@ -1,5 +1,12 @@
 (function () {
   document.documentElement.classList.add("js");
+  document.querySelectorAll('form[data-auto-submit][method="get"]').forEach(function (form) {
+    form.addEventListener("change", function (event) {
+      if (event.target.matches('select, input[type="month"]') && form.checkValidity()) {
+        form.requestSubmit();
+      }
+    });
+  });
   if (document.body.dataset.demo === "true") {
     document.querySelectorAll('form[method="post"]').forEach(function (form) {
       if (new URL(form.action, location.href).pathname === "/logout") return;

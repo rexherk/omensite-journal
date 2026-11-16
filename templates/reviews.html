@@ -1,34 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Reviews · Omensite Journal{% endblock %}
 {% block body %}
-{% set block = month if period == "month" else week %}
-{% set period_label = month_label if period == "month" else week_label %}
+{% set block = month %}
 <header class="journal-page-heading">
   <h1>Reviews</h1>
-  <p class="muted">Review your results and how closely you followed your plan.</p>
+  <p class="muted">Review your monthly results and how closely you followed your plan.</p>
 </header>
 <section class="panel journal-period">
-  <nav class="pill-row" aria-label="Review period">
-    {% for key, label in [("week", "Week"), ("month", "Month")] %}
-    <a class="pill-toggle {{ 'on' if key == period }}" {% if key == period %}aria-current="page"{% endif %}
-       href="/reviews?period={{ key }}&amp;week={{ week_start }}&amp;month={{ month_value }}">{{ label }}</a>
-    {% endfor %}
-  </nav>
-  <form class="filters journal-date-filter" method="get" action="/reviews">
-    <input type="hidden" name="period" value="{{ period }}">
-    {% if period == "month" %}
-    <input type="hidden" name="week" value="{{ week_start }}">
-    <label>Month<input type="month" name="month" value="{{ month_value }}" required></label>
-    {% else %}
-    <input type="hidden" name="month" value="{{ month_value }}">
-    <label>Week of<input type="date" name="week" value="{{ week_start }}" required></label>
-    {% endif %}
-    <button type="submit">Apply date</button>
+  <form class="filters journal-date-filter" method="get" action="/reviews" data-auto-submit>
+    <label>Month<input type="month" name="month" value="{{ month_value }}" required aria-describedby="review-month-help"></label>
+    <noscript><button type="submit">Show month</button></noscript>
   </form>
+  <p class="muted month-filter-help" id="review-month-help">Updates when you choose a month. Based on trades closed in {{ zone_name }}.</p>
 </section>
 
 <section class="panel" aria-labelledby="review-period-title">
-  <h2 id="review-period-title">{{ period_label }}</h2>
+  <h2 id="review-period-title">{{ month_label }}</h2>
   <div class="stats journal-summary">
     <div class="stat"><span>Closed trades</span><strong>{{ block.count }}</strong></div>
     <div class="stat"><span>Net P&amp;L</span><strong class="{{ block.net_pnl | pnl_class }}">{{ block.net_pnl | money }}</strong></div>
@@ -60,7 +47,7 @@
     </details>
   </div>
   {% else %}
-  <p class="muted">No trades closed in this {{ period }}. Choose another date to review past trades.</p>
+  <p class="muted">No trades closed in this month. Choose another month to review past trades.</p>
   {% endif %}
 </section>
 {% endblock %}

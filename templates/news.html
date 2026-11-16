@@ -3,60 +3,27 @@
 {% block body %}
 <header class="journal-page-heading">
   <h1>News</h1>
-  <p class="muted">Economic calendar, saved releases, and 2026 NYSE market dates.</p>
+  <p class="muted">Economic releases and market dates. Use Calendar Settings to filter currencies and impact.</p>
 </header>
 <section class="panel news-calendar" aria-labelledby="economic-calendar">
-  <h2 id="economic-calendar">Economic calendar</h2>
-  <p class="muted">Showing the embedded calendar connects your browser to Tradays. Tradays may collect your IP address and browser details and use cookies. <a href="https://www.tradays.com/en/privacy" rel="noreferrer">Tradays privacy policy</a></p>
-  <div class="actions">
+  <div class="panel-label">
+    <h2 id="economic-calendar">Economic calendar</h2>
     <a class="button ghost" href="https://www.tradays.com/en" target="_blank" rel="noopener noreferrer" aria-label="Open on Tradays in a new tab">Open on Tradays <span aria-hidden="true">↗</span></a>
-    <a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener noreferrer" aria-label="Forex Factory calendar in a new tab">Forex Factory calendar <span aria-hidden="true">↗</span></a>
   </div>
-  <details class="journal-disclosure" data-tradays-calendar>
-    <summary>Show Tradays calendar</summary>
-    <p class="muted">Tradays uses your browser’s local time. If the widget is unavailable, use Open on Tradays above.</p>
-    <noscript><p>Open the calendar on Tradays using the link above.</p></noscript>
-    <template>
-      {% set widget_document %}{% include "partials/tradays_widget.html" %}{% endset %}
-      <iframe class="news-calendar-widget" title="Tradays economic calendar"
-              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
-              referrerpolicy="no-referrer" srcdoc="{{ widget_document | forceescape }}"></iframe>
-    </template>
-  </details>
+  <p class="muted news-calendar-help">Times follow your browser’s local time. Choose your filters, then press Apply in Calendar Settings.</p>
+  {# Direct provider frame: storage works on Tradays' origin, never on the journal's origin. #}
+  <iframe class="news-calendar-widget" title="Tradays economic calendar" loading="eager"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          referrerpolicy="no-referrer"
+          src="https://www.tradays.com/en/economic-calendar/widget?mode=2&amp;dateFormat=MDY&amp;fw=html&amp;utm_source=journal.omensite.com"></iframe>
+  <p class="muted news-calendar-help">Calendar unavailable? <a href="https://www.tradays.com/en" target="_blank" rel="noopener noreferrer">Open on Tradays</a> or use the <a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener noreferrer">Forex Factory calendar</a>.</p>
+  <p class="muted news-calendar-privacy">This calendar loads from Tradays, which may use cookies and receive your IP address and browser details. <a href="https://www.tradays.com/en/privacy" rel="noreferrer">Tradays privacy policy</a></p>
 </section>
-<aside class="panel news-snapshot-note" aria-label="Snapshot coverage">
-  <strong>Saved snapshot{% if snapshot_range %} · {{ snapshot_range }}{% endif %}</strong>
-  <p class="muted">This snapshot does not update live. Release times are shown in {{ user.timezone }}. Check the publisher’s calendar for current dates and times.</p>
-</aside>
 
 <section class="split">
-  <div>
-    <article class="panel">
-      <h2>This week</h2>
-      <p class="muted">{{ week_label }}</p>
-      <p>{{ flagged }} {{ "trade" if flagged == 1 else "trades" }} in your journal opened within {{ window }} minutes of a saved high-impact release.</p>
-    </article>
-    {% for day in days if day.events %}
-    <article class="panel">
-      <h2>{{ day.label }}</h2>
-        {% for event in day.events %}
-        <p>
-          <span class="tag {{ event.impact }}">{{ event.impact }}</span>
-          <strong>{{ event.title }}</strong> {{ event.time }}
-          {% if event.actual %} · actual {{ event.actual }}{% endif %}
-          {% if event.forecast %} · forecast {{ event.forecast }}{% endif %}
-          {% if event.previous %} · previous {{ event.previous }}{% endif %}
-          {% if event.note %}<br><span class="muted">{{ event.note }}</span>{% endif %}
-        </p>
-        {% endfor %}
-    </article>
-    {% else %}
-    <article class="panel"><p class="muted">No releases in the snapshot for this week.</p><a href="#news-snapshot">Browse saved releases</a></article>
-    {% endfor %}
-  </div>
-  <div>
     <article class="panel">
       <h2>Recent high-impact releases</h2>
+      <p class="muted">Saved snapshot{% if snapshot_range %} · {{ snapshot_range }}{% endif %}. These saved dates do not update live. Times in {{ user.timezone }}.</p>
       {% for event in recent %}
       <p><strong>{{ event.title }}</strong><br><span class="muted">{{ event.date }} · {{ event.time }}</span></p>
       {% else %}<p class="muted">The snapshot has no high-impact releases in the preceding two weeks.</p>{% endfor %}
@@ -73,62 +40,5 @@
       <h3>Early closes</h3>
       <ul>{% for event in early %}<li>{{ event.ny_date }} — {{ event.title }}</li>{% endfor %}</ul>
     </article>
-    <article class="panel">
-      <h2>Watchlist and earnings</h2>
-      <p class="muted">Earnings are the dates you enter. This journal does not pull a live earnings feed.</p>
-      {% for row in watchlist %}
-      <form method="post" action="/news/watchlist/{{ row.id }}/delete">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <span>{{ row.symbol }}</span>
-        <button class="ghost" type="submit">Remove</button>
-      </form>
-      {% else %}<p class="muted">No symbols yet.</p>{% endfor %}
-      <form method="post" action="/news/watchlist">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <label>Symbol<input name="symbol" required></label>
-        <button type="submit">Add to watchlist</button>
-      </form>
-      <h3>Earnings</h3>
-      {% for row in earnings %}
-      <form method="post" action="/news/earnings/{{ row.id }}/delete">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <span>{{ row.symbol }} · {{ row.when }} {% if row.note %}· {{ row.note }}{% endif %}</span>
-        <button class="ghost" type="submit">Remove</button>
-      </form>
-      {% else %}<p class="muted">No earnings dates added.</p>
-      {% endfor %}
-      <form method="post" action="/news/earnings">
-        <input type="hidden" name="csrf" value="{{ csrf }}">
-        <label>Symbol<input name="symbol" required></label>
-        <label>When<input type="datetime-local" name="when" required></label>
-        <label>Note<input name="note"></label>
-        <button type="submit">Add earnings date</button>
-      </form>
-    </article>
-  </div>
-</section>
-
-<section class="panel" id="news-snapshot">
-  <h2>Saved releases</h2>
-  {% if snapshot %}
-  <p class="muted">Times in {{ user.timezone }}. A dash means the figure was omitted from the snapshot.</p>
-  <div class="scroll">
-    <table>
-      <tr><th>When</th><th>Impact</th><th>Release</th><th>Actual</th><th>Forecast</th><th>Previous</th><th>Note</th></tr>
-      {% for event in snapshot %}
-      <tr>
-        <td>{{ event.when }}</td>
-        <td><span class="tag {{ event.impact }}">{{ event.impact }}</span></td>
-        <td>{{ event.title }}</td>
-        <td>{{ event.actual or "—" }}</td>
-        <td>{{ event.forecast or "—" }}</td>
-        <td>{{ event.previous or "—" }}</td>
-        <td>{{ event.note }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-  </div>
-  {% else %}<p class="muted">No economic releases are saved.</p>{% endif %}
 </section>
 {% endblock %}
-{% block scripts %}<script src="/static/js/news.js?v=tradays-1"></script>{% endblock %}

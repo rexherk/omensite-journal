@@ -21,7 +21,7 @@ Or:
 py -3 -m uvicorn app.main:app --host 127.0.0.1 --port 8787
 ```
 
-Open http://127.0.0.1:8787. Discord is the only sign-in and sign-up method. Your first Discord sign-in creates your journal. You can also use Try the demo without signing in. Each login sees only its own journal.
+Open http://127.0.0.1:8787. Visitors without an active session land on the login page; signed-in traders and active demo sessions return to their dashboard. The public product page remains at `/home`. Discord is the only sign-in and sign-up method. Your first Discord sign-in creates your journal. You can also use Try the demo without signing in. Each login sees only its own journal.
 
 Discord needs a Discord application, the redirect `http://127.0.0.1:8787/auth/discord/callback`, and `OMENSITE_DISCORD_CLIENT_ID` plus `OMENSITE_DISCORD_CLIENT_SECRET`. Those two lines can also live in `data/discord.env`. Until those values exist, the Discord button answers that sign-in is not configured.
 
@@ -52,10 +52,14 @@ Trades, accounts, sessions, notes, and uploaded chart images are stored in the d
 - A read-only demo and homepage preview backed by the same sample trades, with matching P&L totals and days off
 - Dashboard, monthly P&L calendar, plain-language notes, rule-break cost, and profit left on the table
 - Prop-account limits: daily loss, trailing drawdown, and target progress
-- An optional live Tradays economic calendar, plus a built-in news snapshot for autumn 2026, holidays, and early closes
-- Emotion and mistake tags, a daily plan, and weekly and monthly review pages
+- An automatically displayed Tradays economic calendar, plus recent saved release highlights, holidays, and early closes
+- Emotion and mistake tags, a daily plan, and monthly reviews that update as soon as a month is selected
 - A playbook for your own setups
 - CSV export, a JSON backup, and a print view (use the browser's Save as PDF)
+
+Reviews use `GET /reviews?month=YYYY-MM` and group closed trades in the journal's current timezone; legacy week parameters are ignored. Monthly Report uses `GET /report?month=YYYY-MM` and shows that month's trades across all of the user's accounts, grouped by entry date in that same timezone. It defaults to the current month, including older `month=all` links. The month-named report has no all-time overview or notes, and its Print/PDF action is below the trade list.
+
+The Import page includes the TopstepX export instructions. Select a Journal account before Preview; the selection carries to confirmation. `POST /import/preview` accepts the CSV `file`, the owned `account_id`, and the session's `csrf` token. `POST /import/confirm` accepts the preview `token`, the selected `account_id`, and `csrf`; both validate account ownership. Export one account at a time and avoid overlapping files because imports do not deduplicate repeated fills.
 
 Brand colors live in `static/css/brand.css`: raspberry `#AB2059`, deep plum `#560641`, warm ochre `#BB7B3E`, red-orange `#E13823`, and crimson `#C9203C`. Cream framing and white data surfaces support readable plum text. Crescent-shaped background accents share the logo's raspberry–crimson–red-orange blend across public pages and the journal, with static gradients in the hero and call to action. Decorative layers do not intercept input and are omitted from print. Profit indicators use plum and loss indicators use crimson, with signs and labels alongside color. Performance calendar days use separate semantic tokens for subtle green profits and subtle red losses, with white days for no trades. The transparent logo uses a blended crescent with a solid ochre eye, candles, and trend arrow. The source mask clips all color to the design, without an expanded outer outline. The candle cutouts embedded in the crescent are filled to smooth its edge. The original image mask and local crescent repair are kept in `static/brand-mark.svg`; `static/brand-mark.png` is the tightly cropped 256-pixel website export and `static/brand-mark-1024.png` is the transparent high-resolution PNG download.
 

@@ -98,9 +98,9 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json(), {"ok": True, "name": "Omensite Journal"})
         self.client.cookies.clear()
         home = self.client.get("/")
-        self.assertIn('id="hero-title"', home.text)
-        self.assertIn("Your edge.", home.text)
-        self.assertIn("Your trades. Your patterns. Your edge.", home.text)
+        self.assertEqual(home.url.path, "/login")
+        self.assertIn("Log in to your journal", home.text)
+        self.assertIn('href="/demo"', home.text)
         login = self.client.get("/login")
         self.assertIn('href="/auth/discord"', login.text)
         self.assertNotIn('name="email"', login.text)
@@ -124,13 +124,13 @@ class AppTests(unittest.TestCase):
             self.assertEqual(page.status_code, 200, path)
             self.assertIn("Omensite Journal", page.text)
         news = self.client.get("/news")
-        self.assertIn("Initial Jobless Claims", news.text)
-        self.assertIn("Marked high in this journal", news.text)
+        self.assertIn('title="Tradays economic calendar"', news.text)
+        self.assertIn("NYSE market dates", news.text)
         self.assertIn("noindex", news.text)
 
     def test_intro_and_dashboard_shell(self):
         self.client.cookies.clear()
-        intro = self.client.get("/")
+        intro = self.client.get("/home")
         self.assertIn('href="/signup"', intro.text)
         self.assertIn('href="/demo"', intro.text)
         self.assertIn('role="tablist"', intro.text)
@@ -564,21 +564,98 @@ class AppTests(unittest.TestCase):
             self.assertNotIn("No trade chart yet", page)
         self.assertEqual(self.client.get("/export/backup").json()["trades"], before)
 
-    def test_reviews_select_a_period_and_expand_trade_groups(self):
+    def test_reviews_are_monthly_and_expand_trade_groups(self):
         self.client.get("/demo").raise_for_status()
         month = self.client.get("/reviews?period=month&month=2026-10").raise_for_status().text
-        self.assertIn('aria-current="page"', month)
         self.assertIn("October 2026", month)
         self.assertIn("$7,758.00", month)
         self.assertIn('<details class="journal-disclosure">', month)
-        self.assertIn('name="period" value="month"', month)
-        week = self.client.get("/reviews?period=week&week=2026-11-09").raise_for_status().text
-        self.assertIn("Nov 09, 2026", week)
-        self.assertIn('name="period" value="week"', week)
+        self.assertIn('data-auto-submit', month)
+        self.assertIn('name="month" value="2026-10"', month)
+        self.assertNotIn('name="week"', month)
+        self.assertNotIn('Apply date', month)
+        self.assertNotIn('>Week</a>', month)
+        legacy = self.client.get("/reviews?period=week&week=invalid&month=2026-10").raise_for_status().text
+        self.assertIn("October 2026", legacy)
+        self.assertIn("$7,758.00", legacy)
         empty = self.client.get("/reviews?period=month&month=2026-01").raise_for_status().text
         self.assertIn("No trades closed in this month", empty)
         self.assertNotIn('<details class="journal-disclosure">', empty)
         self.assertEqual(self.client.get("/reviews?month=invalid").status_code, 400)
+
+    def test_report_is_monthly_only_and_print_follows_trades(self):
+        self.client.get("/demo").raise_for_status()
+        before = self.client.get("/export/backup").json()["trades"]
+        july = self.client.get("/report?month=2026-07").raise_for_status().text
+        table = july.split('<section class="panel report-trades"', 1)[1]
+        self.assertIn("July 2026 · 7 trades", table)
+        self.assertIn('id="report-trades-title">July Trades Report</h2>', table)
+        self.assertIn('<h1>Monthly Report</h1>', july)
+        self.assertIn('<span>Monthly Report</span>', july)
+        self.assertIn('value="2026-07" selected', table)
+        self.assertIn("Jul 07, 2026", table)
+        self.assertNotIn("Aug 03, 2026", table)
+        self.assertEqual(table.count('data-label="Opened"'), 7)
+        for removed in ("All-time overview", '<h2>Notes</h2>', 'value="all"', '<section class="stats"'):
+            self.assertNotIn(removed, july)
+        self.assertGreater(july.index('data-print'), july.index('</table>'))
+        current = self.client.get("/report").raise_for_status().text
+        legacy = self.client.get("/report?month=all").raise_for_status().text
+        self.assertEqual(re.search(r'id="report-trades-title">([^<]+)', current)[1],
+                         re.search(r'id="report-trades-title">([^<]+)', legacy)[1])
+        self.assertEqual(current.count('data-label="Opened"'), legacy.count('data-label="Opened"'))
+        empty = self.client.get("/report?month=2026-01").raise_for_status().text
+        self.assertIn("No trades opened in January 2026", empty)
+        self.assertEqual(self.client.get("/report?month=2026-13").status_code, 400)
+        self.assertEqual(self.client.get("/export/backup").json()["trades"], before)
+
+    def test_monthly_report_includes_every_owned_account_type(self):
+        from app import db
+        from app.services import report_context
+        self.csrf = self.sign_in_as("monthly-accounts@example.com")
+        account_ids = []
+        with db.session() as conn:
+            user = db.user_by_email(conn, "monthly-accounts@example.com")
+            for name, kind in [("Report personal", "personal"), ("Combine", "prop"), ("Funded", "prop"), ("Simulated", "sim")]:
+                account_ids.append(db.insert_account(conn, user["id"], name, kind, 0, None, None, None))
+        for account_id in account_ids:
+            self.account = str(account_id)
+            self.post_trade(instrument="MES", legs=[
+                ("entry", "1", "5800", "2026-10-15T09:35"),
+                ("exit", "1", "5810", "2026-10-15T10:00"),
+            ])
+        self.post_trade(instrument="MNQ", legs=[
+            ("entry", "1", "20000", "2026-09-15T09:35"),
+            ("exit", "1", "20010", "2026-09-15T10:00"),
+        ])
+        with db.session() as conn:
+            context = report_context(conn, user, "2026-10")
+        self.assertEqual({t["account_id"] for t in context["trades"]}, set(account_ids))
+        self.assertEqual(len(context["trades"]), 4)
+        page = self.client.get("/report?month=2026-10").raise_for_status().text
+        self.assertIn("October Trades Report", page)
+        self.assertIn("October 2026 · 4 trades · All accounts", page)
+        self.assertNotIn('data-label="Opened">Sep', page)
+
+    def test_monthly_views_use_current_journal_timezone_and_private_records(self):
+        from app import db
+        self.csrf = self.sign_in_as("month-boundary@example.com")
+        self.account = account_from(self.client.get("/trades/new").text)
+        self.post_trade(instrument="MES", legs=[
+            ("entry", "1", "5800", "2026-11-01T00:15"),
+            ("exit", "1", "5810", "2026-11-01T00:45"),
+        ])
+        with db.session() as conn:
+            user = db.user_by_email(conn, "month-boundary@example.com")
+            db.update_user(conn, user["id"], "America/Los_Angeles", 15)
+        october = self.client.get("/reviews?month=2026-10").raise_for_status().text
+        self.assertIn('<span>Closed trades</span><strong>1</strong>', october)
+        self.assertIn("$50.00", october)
+        self.assertIn("No trades closed in this month", self.client.get("/reviews?month=2026-11").text)
+        report = self.client.get("/report?month=2026-10").raise_for_status().text
+        self.assertEqual(report.count('data-label="Opened"'), 1)
+        self.assertIn("Oct 31, 2026 21:15", report)
+        self.assertIn("No trades opened in November 2026", self.client.get("/report?month=2026-11").text)
 
     def test_news_snapshot_corrects_stale_market_date_without_rewriting_stored_news(self):
         from app import db
@@ -603,7 +680,28 @@ class AppTests(unittest.TestCase):
         self.assertIn("Nov 06, 2026", page)
         self.assertNotIn("GDP and Core PCE have", page)
         self.assertNotIn("Day before Thanksgiving", page)
-        self.assertIn("No earnings dates added", page)
+        for removed in ('<h2>This week</h2>', 'id="news-snapshot"', 'href="#news-snapshot"', 'Watchlist and earnings'):
+            self.assertNotIn(removed, page)
+
+    def test_news_calendar_loads_directly_on_its_own_origin(self):
+        from html import unescape
+        from urllib.parse import urlsplit
+
+        page = self.client.get("/news").raise_for_status().text
+        frame = re.search(r'<iframe\b[^>]*title="Tradays economic calendar"[^>]*>', page, re.S)[0]
+        source = unescape(re.search(r'src="([^"]+)"', frame)[1])
+        self.assertEqual(urlsplit(source).netloc, "www.tradays.com")
+        self.assertEqual(urlsplit(source).path, "/en/economic-calendar/widget")
+        self.assertIn('loading="eager"', frame)
+        self.assertIn("allow-same-origin", frame)
+        self.assertIn("allow-scripts", frame)
+        self.assertIn("allow-forms", frame)
+        # Storage is available only on the provider origin, never in a journal srcdoc.
+        self.assertNotIn("srcdoc=", frame)
+        self.assertNotIn("<template>", page)
+        self.assertNotIn("Show Tradays calendar", page)
+        self.assertIn("Calendar unavailable?", page)
+        self.assertIn('href="https://www.tradays.com/en"', page)
 
     def test_privacy_copy_and_active_storage_deletion(self):
         from app import db
@@ -873,6 +971,10 @@ class AppTests(unittest.TestCase):
         self.assertIn("10 minutes", page.text)
 
     def test_csv_short_previews_and_confirms(self):
+        from app import db
+        with db.session() as conn:
+            user = db.user_by_email(conn, self.email)
+            import_account = str(db.insert_account(conn, user["id"], "Import destination", "personal", 0, None, None, None))
         text = (
             "symbol,side,qty,price,time\n"
             "NQ,sell,1,20000,2026-10-01 03:20:00\n"
@@ -880,18 +982,42 @@ class AppTests(unittest.TestCase):
         )
         preview = self.client.post(
             "/import/preview",
-            data={"csrf": self.csrf},
+            data={"csrf": self.csrf, "account_id": import_account},
             files={"file": ("fills.csv", text.encode("utf-8"), "text/csv")},
         )
         self.assertEqual(preview.status_code, 200, preview.text[:800])
         self.assertIn(">short<", preview.text)
+        self.assertEqual(preview.text.count(f'<option value="{import_account}" selected>'), 2)
         token = re.search(r'name="token" value="([^"]+)"', preview.text)
         self.assertIsNotNone(token)
         done = self.client.post(
             "/import/confirm",
-            data={"csrf": self.csrf, "token": token.group(1), "account_id": self.account},
+            data={"csrf": self.csrf, "token": token.group(1), "account_id": import_account},
         )
         self.assertIn("Imported 1", done.text)
+        with db.session() as conn:
+            saved = [t for t in db.trades(conn, user["id"]) if str(t["account_id"]) == import_account]
+            self.assertEqual(len(saved), 1)
+            self.assertEqual(saved[0]["net_pnl"], -40)
+
+    def test_import_preview_validates_account_and_keeps_selection_on_bad_csv(self):
+        from app import db
+        self.fixture_session("other-import@example.com")
+        with db.session() as conn:
+            other = db.user_by_email(conn, "other-import@example.com")
+            other_account = str(db.accounts(conn, other["id"])[0]["id"])
+        for account in ("", other_account, "invalid"):
+            response = self.client.post("/import/preview", data={"csrf": self.csrf, "account_id": account},
+                                        files={"file": ("bad.csv", b"wrong,columns\n1,2\n", "text/csv")})
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Choose an account.", response.text)
+            self.assertNotIn('name="token"', response.text)
+        invalid = self.client.post("/import/preview", data={"csrf": self.csrf, "account_id": self.account},
+                                   files={"file": ("bad.csv", b"wrong,columns\n1,2\n", "text/csv")})
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("Unrecognized columns", invalid.text)
+        self.assertIn(f'<option value="{self.account}" selected>', invalid.text)
+        self.assertNotIn('action="/import/confirm"', invalid.text)
 
     def test_screenshot_markup_and_privacy(self):
         page = self.post_trade(

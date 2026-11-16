@@ -78,6 +78,7 @@ from app.services import (
     remove_trade,
     read_image,
     restore_backup,
+    report_context,
     review_context,
     save_plan,
     save_playbook,
@@ -480,7 +481,7 @@ async def logout(request: Request):
 @app.get("/")
 def dashboard_page(request: Request):
     if request.state.user is None:
-        return render(request, "home.html")
+        return RedirectResponse("/login", status_code=303)
     return render(request, "dashboard.html", **dashboard_request_context(request))
 
 
@@ -700,7 +701,7 @@ def import_page(request: Request):
     user = current(request)
     with db.session() as conn:
         accounts = db.accounts(conn, user["id"])
-    return render(request, "import.html", accounts=accounts, preview=None, token="")
+    return render(request, "import.html", accounts=accounts, account_id="", preview=None, token="")
 
 
 @app.post("/import/preview")
@@ -708,23 +709,24 @@ async def import_preview(request: Request):
     user = current(request)
     form = await read_form(request)
     assert_csrf(request, form)
+    account_id = str(form.get("account_id") or "")
+    with db.session() as conn:
+        accounts = db.accounts(conn, user["id"])
+    if not any(str(account["id"]) == account_id for account in accounts):
+        return render(request, "import.html", 400, accounts=accounts, account_id="", preview=None, token="", error="Choose an account.")
     upload = form.get("file")
     raw = await upload.read() if upload is not None and hasattr(upload, "read") else b""
     if len(raw) > 2_000_000:
-        return render(request, "import.html", 400, accounts=[], preview=None, token="", error="CSV files are limited to 2 MB.")
+        return render(request, "import.html", 400, accounts=accounts, account_id=account_id, preview=None, token="", error="CSV files are limited to 2 MB.")
     try:
         text = raw.decode("utf-8-sig")
     except UnicodeError:
-        return render(request, "import.html", 400, accounts=[], preview=None, token="", error="The file needs to be UTF-8 text.")
+        return render(request, "import.html", 400, accounts=accounts, account_id=account_id, preview=None, token="", error="The file needs to be UTF-8 text.")
     try:
-        with db.session() as conn:
-            accounts = db.accounts(conn, user["id"])
         token, rows = build_preview(user["id"], text, user_zone(user))
     except FormError as exc:
-        with db.session() as conn:
-            accounts = db.accounts(conn, user["id"])
-        return render(request, "import.html", 400, accounts=accounts, preview=None, token="", error=str(exc))
-    return render(request, "import.html", accounts=accounts, preview=rows, token=token)
+        return render(request, "import.html", 400, accounts=accounts, account_id=account_id, preview=None, token="", error=str(exc))
+    return render(request, "import.html", accounts=accounts, account_id=account_id, preview=rows, token=token)
 
 
 @app.post("/import/confirm")
@@ -743,7 +745,7 @@ async def import_confirm(request: Request):
     except FormError as exc:
         with db.session() as conn:
             accounts = db.accounts(conn, user["id"])
-        return render(request, "import.html", 400, accounts=accounts, preview=None, token="", error=str(exc))
+        return render(request, "import.html", 400, accounts=accounts, account_id=account_raw, preview=None, token="", error=str(exc))
     return RedirectResponse(f"/trades?notice=imported&count={count}", status_code=303)
 
 
@@ -834,16 +836,10 @@ def reviews_page(request: Request):
     user = current(request)
     try:
         with db.session() as conn:
-            ctx = review_context(
-                conn,
-                user,
-                request.query_params.get("week", ""),
-                request.query_params.get("month", ""),
-            )
+            ctx = review_context(conn, user, request.query_params.get("month", ""))
     except FormError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    period = request.query_params.get("period") or ("month" if "month" in request.query_params and "week" not in request.query_params else "week")
-    return render(request, "reviews.html", period="month" if period == "month" else "week", **ctx)
+    return render(request, "reviews.html", **ctx)
 
 
 @app.get("/playbook")
@@ -1114,9 +1110,11 @@ async def settings_restore(request: Request):
 @app.get("/report")
 def report_page(request: Request):
     user = current(request)
-    with db.session() as conn:
-        ctx = dashboard_context(conn, user)
-        ctx["trades"] = decorate_trades(conn, user)
+    try:
+        with db.session() as conn:
+            ctx = report_context(conn, user, request.query_params.get("month", ""))
+    except FormError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return render(request, "report.html", **ctx)
 
 

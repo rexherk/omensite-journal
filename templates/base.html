@@ -16,7 +16,7 @@
   </script>
   <link rel="stylesheet" href="/static/css/app.css?v=raspberry-1">
   <link rel="stylesheet" href="/static/css/brand.css?v=pnl-colors-1">
-  <link rel="stylesheet" href="/static/css/journal-brand.css?v=journal-review-2">
+  <link rel="stylesheet" href="/static/css/journal-brand.css?v=monthly-report-2">
   <link rel="stylesheet" href="/static/css/overview.css?v=equity-unified-2">
   {% block extra_head %}{% endblock %}
 </head>
@@ -35,7 +35,7 @@
       <div class="group">
         <span>Analytics</span>
         <a href="/reviews" class="{% if path.startswith('/reviews') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3 3 7-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reviews</span></a>
-        <a href="/report" class="{% if path.startswith('/report') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Report</span></a>
+        <a href="/report" class="{% if path.startswith('/report') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Monthly Report</span></a>
       </div>
       <div class="group">
         <span>Playbook</span>
@@ -102,7 +102,7 @@
   {% endif %}
   <div id="toasts" aria-live="polite"></div>
   <script src="/static/js/trade.js"></script>
-  <script src="/static/js/site.js?v=trade-review-1"></script>
+  <script src="/static/js/site.js?v=monthly-import-1"></script>
   <script src="/static/js/overview.js?v=equity-unified-2"></script>
   {% block scripts %}{% endblock %}
 </body>

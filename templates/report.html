@@ -1,44 +1,49 @@
 {% extends "base.html" %}
 {% block body_class %}report-page{% endblock %}
-{% block title %}Report · Omensite Journal{% endblock %}
+{% block title %}{{ month_label }} · Monthly Report · Omensite Journal{% endblock %}
 {% block body %}
-<div class="actions">
-  <h1>Report</h1>
-  <button type="button" data-print>Print or save as PDF</button>
-</div>
-<p class="muted">Use the browser print dialog and choose Save as PDF. Hour is {{ zone_name }}. Session and kill zone use New York time.</p>
-<section class="stats">
-  <div class="stat"><span>Net</span><strong class="{{ dash.net_pnl | pnl_class }}">{{ dash.net_pnl | money }}</strong></div>
-  <div class="stat"><span>Win rate</span><strong>{{ dash.win_rate | pct }}</strong></div>
-  <div class="stat"><span>Profit factor</span><strong>{{ dash.profit_factor | factor }}</strong></div>
-  <div class="stat"><span>Expectancy</span><strong class="{{ dash.expectancy | pnl_class }}">{{ dash.expectancy | money }}</strong></div>
-  <div class="stat"><span>Average R:R</span><strong class="{{ dash.average_r | pnl_class }}">{{ dash.average_r | rmult }}</strong></div>
-  <div class="stat"><span>Max drawdown</span><strong>{{ dash.max_drawdown | money }}</strong></div>
-  <div class="stat"><span>Rule-break P&amp;L</span><strong class="{{ dash.rule_break_pnl | pnl_class }}">{{ dash.rule_break_pnl | money }}</strong></div>
-  <div class="stat"><span>Left on table</span><strong>{{ dash.left_on_table | money }}</strong></div>
-</section>
-<section class="panel">
-  <h2>Notes</h2>
-  <ul>{% for line in dash.insights %}<li>{{ line }}</li>{% endfor %}</ul>
-</section>
-<section class="panel">
-  <h2>Trades</h2>
-  <div class="scroll">
+<header class="journal-page-heading">
+  <h1>Monthly Report</h1>
+  <p class="muted">Every trade from the selected month, across your Combine, funded, personal, and simulated accounts.</p>
+</header>
+<section class="panel report-trades" id="report-trades" aria-labelledby="report-trades-title">
+  <div class="report-trades-heading">
+    <div>
+      <h2 id="report-trades-title">{{ report_title }}</h2>
+      <p class="muted">{{ month_label }} · {{ trades|length }} trade{{ '' if trades|length == 1 else 's' }} · All accounts</p>
+    </div>
+    <form method="get" action="/report#report-trades" class="journal-date-filter" data-auto-submit>
+      <label>Month
+        <select name="month" aria-describedby="report-month-help">
+          {% for item in month_options %}<option value="{{ item.value }}" {% if month_value == item.value %}selected{% endif %}>{{ item.label }}</option>{% endfor %}
+        </select>
+      </label>
+      <noscript><button type="submit">Show month</button></noscript>
+    </form>
+  </div>
+  <p class="muted month-filter-help" id="report-month-help">Updates when you choose a month. Trades are grouped by entry date in {{ zone_name }}.</p>
+  {% if trades %}
   <table>
-    <tr><th>Opened</th><th>Market</th><th>Side</th><th>Net</th><th>Risk</th><th title="Net P&amp;L after fees divided by initial risk">R:R</th><th>Grade</th><th>Lesson</th></tr>
+    <thead><tr><th scope="col">Opened</th><th scope="col">Market</th><th scope="col">Side</th><th scope="col">Net</th><th scope="col">Risk</th><th scope="col" title="Net P&amp;L after fees divided by initial risk">R:R</th><th scope="col">Grade</th><th scope="col">Lesson</th></tr></thead>
+    <tbody>
     {% for trade in trades %}
     <tr>
-      <td>{{ trade.when }}</td>
-      <td>{{ trade.instrument }}</td>
-      <td>{{ trade.direction }}</td>
-      <td class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
-      <td>{{ trade.risk_dollars | money }}</td>
-      <td class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
-      <td>{{ trade.grade or "—" }}</td>
-      <td>{{ trade.lesson or "" }}</td>
+      <td data-label="Opened">{{ trade.when }}</td>
+      <td data-label="Market"><strong>{{ trade.instrument }}</strong></td>
+      <td data-label="Side">{{ trade.direction }}</td>
+      <td data-label="Net" class="num {{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</td>
+      <td data-label="Risk" class="num">{{ trade.risk_dollars | money }}</td>
+      <td data-label="R:R" class="num {{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</td>
+      <td data-label="Grade">{{ trade.grade or "—" }}</td>
+      <td data-label="Lesson" class="report-trade-lesson">{% if trade.lesson %}<details class="report-lesson"><summary>Read lesson</summary><p>{{ trade.lesson }}</p></details>{% else %}—{% endif %}</td>
     </tr>
     {% endfor %}
+    </tbody>
   </table>
-  </div>
+  {% else %}<p class="muted">No trades opened in {{ month_label }}. Choose another month to see your trade history.</p>{% endif %}
 </section>
+<div class="actions report-print-actions">
+  <button type="button" data-print>Print or save as PDF</button>
+  <p class="muted">Print {{ month_label }} or choose Save as PDF in the print dialog.</p>
+</div>
 {% endblock %}

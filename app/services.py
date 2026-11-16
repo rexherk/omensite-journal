@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import calendar
 import csv
 import io
 import json
@@ -1283,39 +1284,61 @@ def save_plan(conn, user: dict, form) -> str:
     return day
 
 
-def review_context(conn, user: dict, week_text: str, month_text: str) -> dict:
-    zone = user_zone(user)
-    today = datetime.now(zone).date()
-    try:
-        anchor = date.fromisoformat(week_text) if week_text else today
-    except ValueError as exc:
-        raise JournalError("That week is not valid.") from exc
-    week_start = anchor - timedelta(days=anchor.weekday())
-    week_end = week_start + timedelta(days=6)
+def _month_start(month_text: str, zone: ZoneInfo) -> date:
     if month_text:
         try:
+            if not re.fullmatch(r"\d{4}-\d{2}", month_text):
+                raise ValueError
             year, month = (int(part) for part in month_text.split("-"))
-            month_start = date(year, month, 1)
+            return date(year, month, 1)
         except ValueError as exc:
             raise JournalError("That month is not valid.") from exc
-    else:
-        month_start = today.replace(day=1)
-    if month_start.month == 12:
-        month_end = date(month_start.year + 1, 1, 1) - timedelta(days=1)
-    else:
-        month_end = date(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
+    return datetime.now(zone).date().replace(day=1)
+
+
+def review_context(conn, user: dict, month_text: str = "") -> dict:
+    zone = user_zone(user)
+    month_start = _month_start(month_text, zone)
+    month_end = month_start.replace(day=calendar.monthrange(month_start.year, month_start.month)[1])
     raw = db.trades(conn, user["id"])
     tags = db.tags_for_user(conn, user["id"])
     mistakes = db.mistakes_for_user(conn, user["id"])
     math = _math_rows(raw, mistakes)
+    for row, source in zip(math, raw, strict=True):
+        if source.get("closed_at"):
+            row["closed_at"] = local_stamp(parse_iso(source["closed_at"]), zone)
     return {
-        "week_start": week_start.isoformat(),
-        "week_end": week_end.isoformat(),
-        "week_label": f"{week_start:%b %d, %Y} – {week_end:%b %d, %Y}",
-        "month_value": month_start.strftime("%Y-%m"),
+        "month_value": month_start.isoformat()[:7],
         "month_label": month_start.strftime("%B %Y"),
-        "week": review_slice(math, tags, week_start, week_end),
         "month": review_slice(math, tags, month_start, month_end),
+        "zone_name": str(zone),
+    }
+
+
+def report_context(conn, user: dict, month_text: str = "") -> dict:
+    zone = user_zone(user)
+    # Old all-month links now open the current monthly report.
+    selected_month = _month_start("" if month_text == "all" else month_text, zone)
+    selected = selected_month.isoformat()[:7]
+    trades = decorate_trades(conn, user)
+    months = {datetime.now(zone).date().isoformat()[:7], selected}
+    chosen = []
+    for trade in trades:
+        opened_month = local_stamp(parse_iso(trade["opened_at"]), zone)[:7] if trade.get("opened_at") else ""
+        if opened_month:
+            months.add(opened_month)
+        if selected == opened_month:
+            chosen.append(trade)
+    return {
+        "trades": chosen,
+        "month_value": selected,
+        "month_label": selected_month.strftime("%B %Y"),
+        "report_title": selected_month.strftime("%B Trades Report"),
+        "zone_name": str(zone),
+        "month_options": [
+            {"value": key, "label": date.fromisoformat(key + "-01").strftime("%B %Y")}
+            for key in sorted(months, reverse=True)
+        ],
     }
 
 

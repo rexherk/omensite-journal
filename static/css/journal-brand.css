@@ -139,10 +139,53 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .journal-page-heading p { margin: 0; max-width: 48rem; line-height: 1.6; }
 .journal-page-heading + .panel { margin-top: 1rem; }
 .journal-period { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem 2rem; }
-.journal-period .pill-row { margin: 0; }
-.journal-date-filter { align-items: end; }
-.journal-date-filter label { flex: 1; min-width: 10rem; }
-.journal-period button, .journal-period .pill-toggle, .trade-filters button { min-height: 42px; }
+.journal-date-filter { align-items: end; margin: 0; }
+.journal-date-filter label { min-width: 12rem; margin: 0; }
+.journal-date-filter input, .journal-date-filter select { min-height: 44px; }
+.trade-filters button { min-height: 42px; }
+.month-filter-help { font-size: .85rem; line-height: 1.6; }
+.journal-period .month-filter-help { flex: 1; min-width: 12rem; margin: 0 0 .3rem; }
+.import-guide { max-width: 64rem; }
+.import-guide ol { padding-left: 1.5rem; margin: 1.15rem 0; }
+.import-guide li { padding-left: .4rem; margin: .7rem 0; line-height: 1.65; }
+.import-guide li::marker { color: var(--oj-primary); font-weight: 600; }
+.import-guidance { border-top: 1px solid var(--oj-line); margin-top: 1.2rem; padding-top: .25rem; line-height: 1.65; }
+.import-guidance p:last-child { margin-bottom: 0; }
+.import-upload { max-width: 64rem; }
+.import-upload > label { max-width: 34rem; }
+.import-upload input[type="file"] { max-width: 100%; }
+.report-trades-heading { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 1rem; }
+.report-trades-heading h2 { margin-bottom: .35rem; }
+.report-trades-heading p { margin: 0; }
+.report-trades { scroll-margin-top: 6rem; }
+.report-print-actions { margin-top: 1.25rem; gap: .75rem 1.25rem; flex-wrap: wrap; }
+.report-print-actions p { margin: 0; font-size: .85rem; }
+.report-lesson summary { cursor: pointer; color: var(--oj-primary); font-weight: 600; }
+.report-lesson p { margin: .6rem 0 0; }
+.report-trades table { width: 100%; min-width: 0; table-layout: auto; font-size: .85rem; }
+.report-trades th, .report-trades td { padding: 1rem .45rem; vertical-align: top; overflow-wrap: anywhere; line-height: 1.65; }
+.report-trades th { white-space: nowrap; }
+.report-trades th:first-child { width: 18%; }
+.report-trades th:last-child { width: 22%; }
+.report-trades .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media screen and (max-width: 800px) {
+  .report-trades table, .report-trades tbody { display: block; }
+  .report-trades thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .report-trades tbody > tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 1.2rem 0; border-top: 1px solid var(--oj-line); }
+  .report-trades td { display: block; padding: 0; border: 0; }
+  .report-trades td::before { content: attr(data-label); display: block; font-size: .7rem; color: var(--oj-muted); margin-bottom: .2rem; }
+  .report-trades .report-trade-lesson { grid-column: 1 / -1; }
+}
+@media (max-width: 500px) {
+  .journal-period .journal-date-filter, .journal-period label, .report-trades .journal-date-filter { width: 100%; }
+  .import-guide li { padding-left: .2rem; }
+}
+@media print {
+  .report-trades .journal-date-filter, .report-trades .month-filter-help { display: none; }
+  .report-trades tr { break-inside: avoid; }
+  .report-lesson::details-content { display: block; content-visibility: visible; }
+  .report-lesson summary { display: none; }
+}
 .journal-summary { margin: 1rem 0; }
 .journal-summary .stat { min-width: 0; }
 .journal-stack { display: grid; gap: .7rem; }
@@ -153,10 +196,9 @@ button.ghost,.button.ghost,input,select,textarea,.palette-trigger,.palette-card,
 .journal-list li { padding: .85rem 0; border-top: 1px solid var(--oj-line); line-height: 1.65; }
 .journal-list li > span { display: inline-block; margin-left: .75rem; }
 .journal-list p { margin: .45rem 0 0; font-size: .85rem; }
-.news-snapshot-note p { margin: .4rem 0 0; line-height: 1.6; }
-.news-calendar .journal-disclosure { margin-top: .9rem; }
+.news-calendar-help { margin: .75rem 0; font-size: .85rem; line-height: 1.6; }
+.news-calendar-privacy { margin-bottom: 0; font-size: .75rem; line-height: 1.5; }
 .news-calendar-widget { display: block; width: 100%; height: clamp(30rem, 72vh, 42rem); border: 1px solid var(--oj-line); border-radius: 6px; }
-#news-snapshot { scroll-margin-top: 8rem; }
 .demo-banner { position: relative; top: auto; padding-block: 6px; min-height: 48px; }
 .demo-banner strong, .demo-banner a { font-size: .8rem; }
 .demo-banner-actions { gap: 1rem; }

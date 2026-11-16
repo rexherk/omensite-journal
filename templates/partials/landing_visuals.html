@@ -30,7 +30,7 @@
 
 
 {% macro dashboard() -%}
-<div class="preview-dashboard"><aside class="preview-side"><div class="preview-brand">{{ logo('/home') }}</div><div class="preview-add">＋ &nbsp; Log a trade</div>{% for title, symbol in [('Dashboard','grid'),('Trades','journal'),('Reviews','chart'),('Report','chart'),('Setups','book'),('Plan','target'),('News','calendar'),('Settings','case')] %}<div class="preview-nav {{ 'selected' if loop.first else '' }}">{{ icon(symbol) }} {{ title }}</div>{% endfor %}<div class="preview-side-bottom">Sample trader</div></aside><div class="preview-main"><div class="preview-heading"><strong>Dashboard</strong><span>All accounts</span></div><div class="preview-meta">Your trading, at a glance. <span>Sample data · Read-only</span></div>{{ overview(sample.dash, sample.calendar, sample.equity_svg, preview=true, chart=sample.equity_chart) }}</div></div>
+<div class="preview-dashboard"><aside class="preview-side"><div class="preview-brand">{{ logo('/home') }}</div><div class="preview-add">＋ &nbsp; Log a trade</div>{% for title, symbol in [('Dashboard','grid'),('Trades','journal'),('Reviews','chart'),('Monthly Report','chart'),('Setups','book'),('Plan','target'),('News','calendar'),('Settings','case')] %}<div class="preview-nav {{ 'selected' if loop.first else '' }}">{{ icon(symbol) }} {{ title }}</div>{% endfor %}<div class="preview-side-bottom">Sample trader</div></aside><div class="preview-main"><div class="preview-heading"><strong>Dashboard</strong><span>All accounts</span></div><div class="preview-meta">Your trading, at a glance. <span>Sample data · Read-only</span></div>{{ overview(sample.dash, sample.calendar, sample.equity_svg, preview=true, chart=sample.equity_chart) }}</div></div>
 {%- endmacro %}
 
 {% macro trade_table() -%}
