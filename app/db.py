@@ -334,6 +334,10 @@ def ensure_user_columns(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE accounts ADD COLUMN consistency_pct REAL")
     if "rule_profile" not in accounts:
         conn.execute("ALTER TABLE accounts ADD COLUMN rule_profile TEXT")
+    days = _column_names(conn, "days")
+    for column in ("plan_followed", "tomorrow_change"):
+        if column not in days:
+            conn.execute(f"ALTER TABLE days ADD COLUMN {column} TEXT")
 
 
 def init_db(conn: sqlite3.Connection) -> None:
@@ -343,7 +347,8 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)")
         migrations = Path(__file__).resolve().parent.parent / "migrations"
         for version, filename in (("001_initial", "001_initial_postgres.sql"),
-                                  ("002_account_rules", "002_account_rules_postgres.sql")):
+                                  ("002_account_rules", "002_account_rules_postgres.sql"),
+                                  ("003_plan_review", "003_plan_review_postgres.sql")):
             if not conn.execute("SELECT version FROM schema_migrations WHERE version = ?", (version,)).fetchone():
                 conn.executescript((migrations / filename).read_text(encoding="utf-8"))
                 conn.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
@@ -712,24 +717,35 @@ def day_row(conn, user_id: int, day: str) -> dict | None:
     return one(conn, "SELECT * FROM days WHERE user_id = ? AND day = ?", (user_id, day))
 
 
-def save_day(conn, user_id: int, day: str, bias: str, levels: str, draw: str, news: str, review: str) -> None:
+def save_day(conn, user_id: int, day: str, bias: str, levels: str, draw: str, news: str, review: str,
+             plan_followed: str | None = None, tomorrow_change: str | None = None) -> None:
     conn.execute(
         """
-        INSERT INTO days (user_id, day, bias, key_levels, draw, news_to_watch, eod_review)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO days (user_id, day, bias, key_levels, draw, news_to_watch, eod_review, plan_followed, tomorrow_change)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id, day) DO UPDATE SET
             bias = excluded.bias,
             key_levels = excluded.key_levels,
             draw = excluded.draw,
             news_to_watch = excluded.news_to_watch,
-            eod_review = excluded.eod_review
+            eod_review = excluded.eod_review,
+            plan_followed = COALESCE(excluded.plan_followed, days.plan_followed),
+            tomorrow_change = COALESCE(excluded.tomorrow_change, days.tomorrow_change)
         """,
-        (user_id, day, bias, levels, draw, news, review),
+        (user_id, day, bias, levels, draw, news, review, plan_followed, tomorrow_change),
     )
 
 
 def playbooks(conn, user_id: int) -> list[dict]:
     return many(conn, "SELECT * FROM playbooks WHERE user_id = ? ORDER BY id DESC", (user_id,))
+
+
+def playbook_index(conn, user_id: int) -> list[dict]:
+    return many(conn, """
+        SELECT b.id, b.name, b.setup,
+               (SELECT COUNT(*) FROM playbook_images AS i WHERE i.playbook_id = b.id) AS chart_count
+        FROM playbooks AS b WHERE b.user_id = ? ORDER BY b.id DESC
+        """, (user_id,))
 
 
 def playbook(conn, user_id: int, playbook_id: int) -> dict | None:

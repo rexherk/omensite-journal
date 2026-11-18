@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit setup' if book_id else 'New setup' }} · Playbook · Omensite Journal{% endblock %}
+{% block body_class %}playbook-page playbook-editor-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/playbook.css?v=1">{% endblock %}
+{% macro field(name, label, limit, rows=0, required=false, placeholder='') %}
+  <div class="playbook-field">
+    <label for="setup-{{ name }}">{{ label }}{% if required %} <span>Required</span>{% endif %}</label>
+    {% set attributes %}id="setup-{{ name }}" name="{{ name }}" maxlength="{{ limit }}" placeholder="{{ placeholder }}" aria-describedby="setup-{{ name }}-error" {% if field_errors.get(name) %}aria-invalid="true"{% endif %}{% if required %} required{% endif %}{% endset %}
+    {% if rows %}<textarea {{ attributes | safe }} rows="{{ rows }}">{{ draft.get(name) or '' }}</textarea>
+    {% else %}<input {{ attributes | safe }} value="{{ draft.get(name) or '' }}">{% endif %}
+    <p id="setup-{{ name }}-error" class="playbook-field-error negative" data-field-error="{{ name }}" {% if not field_errors.get(name) %}hidden{% endif %}>{{ field_errors.get(name, '') }}</p>
+  </div>
+{% endmacro %}
+{% block body %}
+{% set back_href = '/playbook/' ~ book_id if book_id else ('/playbook/' ~ source.id if source else '/playbook') %}
+<a class="playbook-back" href="{{ back_href }}">← {{ 'Back to setup' if book_id or source else 'Back to Playbook' }}</a>
+<header class="playbook-heading">
+  <div>
+    <h1>{{ 'Edit setup' if book_id else ('Duplicate setup' if source else 'New setup') }}</h1>
+    {% if source %}<p>Draft from “{{ source.name }}”. Save to add it to your Playbook. Attach charts after saving.</p>
+    {% elif book_id %}<p>{{ draft.name }}</p>{% endif %}
+  </div>
+</header>
+<form id="playbook-editor" method="post" action="{{ '/playbook/' ~ book_id if book_id else '/playbook' }}" data-draft="{{ 'true' if save_error or source else 'false' }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <section class="panel playbook-content" aria-labelledby="editor-criteria-title">
+    <h2 id="editor-criteria-title">Setup criteria</h2>
+    {{ field('name', 'Setup name', 120, required=true, placeholder='e.g. NY AM liquidity sweep') }}
+    {{ field('setup', 'Setup description', 8000, rows=4, placeholder='What conditions make this setup worth watching?') }}
+    {{ field('rules', 'Rules', 8000, rows=5, placeholder='Entry criteria, invalidation, and exit rules.') }}
+  </section>
+  <section class="panel playbook-content" aria-labelledby="editor-notes-title">
+    <h2 id="editor-notes-title">Notes and examples</h2>
+    {{ field('example_notes', 'Notes', 8000, rows=5, placeholder='Lessons, exceptions, or examples to revisit.') }}
+  </section>
+  <div class="playbook-save-bar">
+    <p data-save-status role="status" {% if save_error %}class="negative"{% endif %}>{{ save_error or ('Unsaved draft' if source else ('Editing saved setup' if book_id else 'Not saved yet')) }}</p>
+    <div class="playbook-actions">
+      <a class="button ghost" href="{{ back_href }}">Cancel</a>
+      <button type="submit">Save setup</button>
+    </div>
+  </div>
+</form>
+<dialog id="playbook-discard" class="playbook-discard" aria-labelledby="playbook-discard-title">
+  <h2 id="playbook-discard-title">Discard unsaved changes?</h2>
+  <p>Save the setup to keep your edits.</p>
+  <form method="dialog" class="playbook-actions"><button class="ghost" value="cancel" autofocus>Keep editing</button><button value="discard">Discard changes</button></form>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="/static/js/playbook.js?v=1"></script>{% endblock %}

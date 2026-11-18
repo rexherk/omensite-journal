@@ -216,7 +216,7 @@ class AppTests(unittest.TestCase):
         self.assertTrue(self.client.cookies.get("omensite_demo"))
         token = csrf_from(demo.text)
         demo_session = self.client.cookies.get("omensite_demo")
-        for path in ("/trades", "/settings/profile", "/settings/sample", "/import/confirm"):
+        for path in ("/trades", "/settings/profile", "/settings/sample", "/import/confirm", "/plan", "/playbook"):
             blocked = self.client.post(path, data={"csrf": token, "timezone": "UTC"})
             self.assertEqual(blocked.status_code, 403, path)
             self.assertIn("This demo is read-only.", blocked.text)
@@ -1089,6 +1089,172 @@ class AppTests(unittest.TestCase):
         trades = self.client.get("/trades")
         self.assertIn("RTY", trades.text)
         self.assertEqual(self.client.get(f"/trades/{trade_id}").status_code, 404)
+
+    def test_plan_save_copy_source_and_legacy_review_survive(self):
+        from app import db
+        csrf = self.sign_in_as("plan-copy@example.com")
+        headers = {"Accept": "application/json"}
+        prep = {"csrf": csrf, "day": "2026-11-13", "bias": "Bullish", "draw": "BSL",
+                "key_levels": "Prior high", "news_to_watch": "CPI", "eod_review": "Legacy notes",
+                "plan_followed": "Waited for displacement", "tomorrow_change": "Be patient"}
+        result = self.client.post("/plan", data=prep, headers=headers)
+        self.assertEqual(result.json(), {"saved": True, "day": "2026-11-13"})
+        current = dict(prep, day="2026-11-17", eod_review="Keep today’s notes", plan_followed="Today’s review")
+        self.client.post("/plan", data=current, headers=headers).raise_for_status()
+        self.client.post("/plan", data={"csrf": csrf, "day": "2026-11-16", "eod_review": "Review only"}, headers=headers).raise_for_status()
+        ctx = self.client.get("/plan?day=2026-11-17", headers=headers).json()
+        self.assertEqual(ctx["previous_plan"]["day"], "2026-11-13")
+        self.assertEqual(set(ctx["previous_plan"]), {"day", "bias", "draw", "key_levels", "news_to_watch"})
+        self.assertEqual(ctx["plan"]["eod_review"], "Keep today’s notes")
+        self.assertEqual(ctx["plan"]["plan_followed"], "Today’s review")
+        # Older clients must not clear the new review prompts they don't send.
+        legacy = {k:v for k,v in current.items() if k not in {"plan_followed", "tomorrow_change"}}
+        self.client.post("/plan", data=legacy).raise_for_status()
+        self.assertEqual(self.client.get("/plan?day=2026-11-17", headers=headers).json()["plan"]["plan_followed"], "Today’s review")
+        backup = self.client.get("/export/backup").json()
+        self.sign_in_as("plan-restore@example.com")
+        with db.session() as conn:
+            from app.services import restore_backup
+            restore_backup(conn, db.user_by_email(conn, "plan-restore@example.com"), backup)
+        restored = self.client.get("/plan?day=2026-11-17", headers=headers).json()
+        self.assertEqual(restored["plan"], ctx["plan"])
+
+    def test_plan_validation_and_storage_failure_preserve_saved_data(self):
+        from app import db
+        csrf = self.sign_in_as("plan-errors@example.com")
+        data = {"csrf": csrf, "day": "2026-11-17", "key_levels": "Original", "eod_review": "Existing review"}
+        headers = {"Accept": "application/json"}
+        self.client.post("/plan", data=data, headers=headers).raise_for_status()
+        changed = dict(data, key_levels="Unsaved level", eod_review="Draft review", plan_followed="Draft answer", bias="invalid")
+        failed = self.client.post("/plan", data=changed, headers=headers)
+        self.assertEqual(failed.status_code, 400)
+        self.assertFalse(failed.json()["saved"])
+        html = self.client.post("/plan", data=changed)
+        self.assertEqual(html.status_code, 400)
+        self.assertIn("Unsaved level</textarea>", html.text)
+        self.assertIn("Draft review</textarea>", html.text)
+        self.assertIn('data-save-error="true"', html.text)
+        changed["bias"] = "Bullish"
+        real_save = db.save_day
+        def broken_save(*args, **kwargs):
+            real_save(*args, **kwargs)
+            raise RuntimeError("injected transaction failure")
+        with patch("app.db.save_day", side_effect=broken_save), self.assertLogs("app.main", level="ERROR"):
+            failed = self.client.post("/plan", data=changed, headers=headers)
+        self.assertEqual(failed.status_code, 503)
+        self.assertFalse(failed.json()["saved"])
+        ctx = self.client.get("/plan?day=2026-11-17", headers=headers).json()
+        self.assertEqual(ctx["plan"]["key_levels"], "Original")
+        self.assertEqual(ctx["plan"]["eod_review"], "Existing review")
+        changed["csrf"] = "invalid"
+        self.assertEqual(self.client.post("/plan", data=changed, headers=headers).status_code, 403)
+
+    def test_plan_dates_use_current_zone_and_isolate_users(self):
+        from app import db
+        from zoneinfo import ZoneInfo
+        csrf = self.sign_in_as("plan-zone@example.com")
+        class FixedNow(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime(2026, 11, 18, 2, tzinfo=ZoneInfo("UTC")).astimezone(tz)
+        headers = {"Accept": "application/json"}
+        self.client.post("/plan", data={"csrf": csrf, "day": "2026-11-16", "key_levels": "Private level"}).raise_for_status()
+        with patch("app.services.datetime", FixedNow):
+            ctx = self.client.get("/plan", headers=headers).json()
+        self.assertEqual(ctx["day"], "2026-11-17")
+        self.assertEqual(ctx["previous_day"], "2026-11-16")
+        self.assertEqual(ctx["next_day"], "2026-11-18")
+        # Demo trades use saved UTC fills, even after the journal zone changes.
+        self.client.get("/demo")
+        ny = self.client.get("/plan?day=2026-11-16", headers=headers).json()
+        self.assertEqual(len(ny["opened"]), 4)
+        with db.session() as conn:
+            demo_id = db.user_by_email(conn, "demo@omensite.journal")["id"]
+            conn.execute("UPDATE users SET timezone = ? WHERE id = ?", ("Asia/Tokyo", demo_id))
+        try:
+            tokyo = self.client.get("/plan?day=2026-11-17", headers=headers).json()
+            crossing = {t["id"] for t in ny["opened"] if datetime.fromisoformat(t["opened_at"].replace("Z", "+00:00")).astimezone(ZoneInfo("Asia/Tokyo")).date() == date(2026, 11, 17)}
+            self.assertEqual(len(crossing), 2)
+            self.assertEqual(crossing, {t["id"] for t in tokyo["opened"] if t["opened_at"].startswith("2026-11-16")})
+        finally:
+            with db.session() as conn:
+                conn.execute("UPDATE users SET timezone = ? WHERE id = ?", ("America/New_York", demo_id))
+        self.sign_in_as("plan-other@example.com")
+        ctx = self.client.get("/plan?day=2026-11-17", headers=headers).json()
+        self.assertIsNone(ctx["previous_plan"])
+        self.assertFalse(ctx["plan_saved"])
+        page = self.client.get("/plan?day=2026-11-17&notice=plan")
+        self.assertNotIn("The day's plan is saved", page.text)
+        self.assertEqual(self.client.get("/plan?day=invalid").status_code, 400)
+        self.assertEqual(self.client.get("/plan?day=0001-01-01").status_code, 200)
+        self.assertEqual(self.client.get("/plan?day=9999-12-31").status_code, 200)
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get("/plan", follow_redirects=False).status_code, 303)
+
+    def test_playbook_duplicate_is_a_draft_and_preserves_trade_text_and_charts(self):
+        from app import db
+        self.csrf = self.sign_in_as("playbook-duplicate@example.com")
+        self.account = account_from(self.client.get("/trades/new").text)
+        self.post_trade(legs=[("entry", "1", "5820", "2026-11-17T09:35"), ("exit", "1", "5830", "2026-11-17T10:05")])
+        with db.session() as conn:
+            uid = db.user_by_email(conn, "playbook-duplicate@example.com")["id"]
+            trade = db.trades(conn, uid)[0]
+            conn.execute("UPDATE trades SET setup = ? WHERE id = ? AND user_id = ?", ("Opening sweep", trade["id"], uid))
+        setup = dict(csrf=self.csrf, name="Opening sweep", setup="Wait for displacement.", rules="Retest only.", example_notes="Review the open.")
+        headers = {"Accept": "application/json"}
+        source = self.client.post("/playbook", data=setup, headers=headers).raise_for_status().json()
+        self.assertTrue(source["saved"])
+        chart = self.client.post(f'/playbook/{source["id"]}/images', data={"csrf": self.csrf}, files={"image": ("es.png", PNG, "image/png")})
+        self.assertEqual(chart.status_code, 200)
+        original = self.client.get(source["url"], headers=headers).json()
+        self.assertEqual(len(original["charts"]), 1)
+        self.assertEqual(self.client.get(original["charts"][0]["url"]).content, PNG)
+        index = self.client.get("/playbook?q=SWEEP", headers=headers).json()
+        self.assertEqual(index["setups"], [dict(id=source["id"], name="Opening sweep", summary="Wait for displacement.", chart_count=1)])
+        self.assertIn("No matching setups", self.client.get("/playbook?q=other").text)
+        draft = self.client.get(f'/playbook/new?copy={source["id"]}')
+        self.assertIn('value="Opening sweep (copy)"', draft.text)
+        self.assertIn("Retest only.</textarea>", draft.text)
+        self.assertNotIn(original["charts"][0]["url"], draft.text)
+        self.assertEqual(self.client.get("/playbook", headers=headers).json()["total"], 1)
+        copied = self.client.post("/playbook", data=dict(setup, name="Opening sweep (copy)"), headers=headers).json()
+        self.assertNotEqual(copied["id"], source["id"])
+        self.assertEqual(self.client.get(copied["url"], headers=headers).json()["charts"], [])
+        changed = self.client.post(f'/playbook/{copied["id"]}', data=dict(setup, name="Retest variant"))
+        self.assertIn('role="status">Saved</p>', changed.text)
+        self.assertEqual(self.client.get(source["url"], headers=headers).json(), original)
+        self.assertEqual(self.client.get("/export/backup").json()["trades"][0]["setup"], "Opening sweep")
+        self.sign_in_as("another-playbook@example.com")
+        self.assertEqual(self.client.get(f'/playbook/new?copy={source["id"]}').status_code, 404)
+        self.assertEqual(self.client.get(source["url"]).status_code, 404)
+
+    def test_playbook_failed_save_keeps_draft_and_rolls_back(self):
+        from app import db
+        csrf = self.sign_in_as("playbook-failure@example.com")
+        headers = {"Accept": "application/json"}
+        fields = dict(csrf=csrf, name="Original", setup="Original criteria", rules="", example_notes="Existing notes")
+        item = self.client.post("/playbook", data=fields, headers=headers).json()
+        path = f'/playbook/{item["id"]}'
+        validation = self.client.post(path, data=dict(fields, name="  ", example_notes="Draft notes"))
+        self.assertEqual(validation.status_code, 400)
+        self.assertIn('aria-invalid="true"', validation.text)
+        self.assertIn("Enter a setup name.", validation.text)
+        self.assertIn("Draft notes</textarea>", validation.text)
+        invalid = self.client.post("/playbook", data=dict(fields, rules="x"*8001), headers=headers)
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("rules", invalid.json()["fields"])
+        real_update = db.update_playbook
+
+        def broken_save(*args, **kwargs):
+            real_update(*args, **kwargs)
+            raise RuntimeError("injected storage failure")
+
+        with patch("app.db.update_playbook", side_effect=broken_save), self.assertLogs("app.main", level="ERROR"):
+            failure = self.client.post(path, data=dict(fields, example_notes="Draft notes"), headers=headers)
+        self.assertEqual(failure.status_code, 503)
+        self.assertFalse(failure.json()["saved"])
+        self.assertEqual(self.client.get(path, headers=headers).json()["example_notes"], "Existing notes")
+        self.assertEqual(self.client.post(path, data=dict(fields, csrf="bad"), headers=headers).status_code, 403)
 
     def test_sample_journal_insights(self):
         self.sign_in_as("sample@example.com")

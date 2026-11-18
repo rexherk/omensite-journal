@@ -1242,7 +1242,11 @@ def news_context(conn, user: dict) -> dict:
     }
 
 
-def plan_context(conn, user: dict, day_text: str) -> dict:
+PLAN_PREP_FIELDS = ("bias", "key_levels", "draw", "news_to_watch")
+PLAN_FIELDS = (*PLAN_PREP_FIELDS, "eod_review", "plan_followed", "tomorrow_change")
+
+
+def plan_date_context(user: dict, day_text: str) -> dict:
     zone = user_zone(user)
     if day_text:
         try:
@@ -1251,26 +1255,33 @@ def plan_context(conn, user: dict, day_text: str) -> dict:
             raise JournalError("That date is not valid.") from exc
     else:
         day = datetime.now(zone).date()
-    row = db.day_row(conn, user["id"], day.isoformat()) or {
-        "bias": "",
-        "key_levels": "",
-        "draw": "",
-        "news_to_watch": "",
-        "eod_review": "",
-    }
+    return {"day": day.isoformat(), "day_label": day.strftime("%A, %b %d, %Y"),
+            "today": datetime.now(zone).date().isoformat(), "zone_name": str(zone),
+            "previous_day": (day - timedelta(days=1)).isoformat() if day > date.min else None,
+            "next_day": (day + timedelta(days=1)).isoformat() if day < date.max else None}
+
+
+def plan_context(conn, user: dict, day_text: str) -> dict:
+    ctx = plan_date_context(user, day_text)
+    row = db.day_row(conn, user["id"], ctx["day"])
+    previous = db.one(conn, """SELECT day, bias, key_levels, draw, news_to_watch FROM days
+        WHERE user_id = ? AND day < ? AND (
+            COALESCE(TRIM(bias), '') <> '' OR COALESCE(TRIM(key_levels), '') <> '' OR
+            COALESCE(TRIM(draw), '') <> '' OR COALESCE(TRIM(news_to_watch), '') <> '')
+        ORDER BY day DESC LIMIT 1""", (user["id"], ctx["day"]))
     opened = []
     for trade in decorate_trades(conn, user):
-        if (trade.get("opened_local") or "").startswith(day.isoformat()):
+        if trade.get("opened_at") and local_stamp(parse_iso(trade["opened_at"]), user_zone(user))[:10] == ctx["day"]:
             opened.append(trade)
-    return {"day": day.isoformat(), "plan": row, "opened": opened}
+    return {**ctx, "plan": {key: (row or {}).get(key) or "" for key in PLAN_FIELDS},
+            "plan_saved": row is not None, "previous_plan": previous, "opened": opened}
 
 
 def save_plan(conn, user: dict, form) -> str:
     day = _one(form, "day").strip()
-    try:
-        date.fromisoformat(day)
-    except ValueError as exc:
-        raise JournalError("That date is not valid.") from exc
+    if not day:
+        raise JournalError("Choose a date for this plan.")
+    day = plan_date_context(user, day)["day"]
     db.save_day(
         conn,
         user["id"],
@@ -1280,6 +1291,8 @@ def save_plan(conn, user: dict, form) -> str:
         _choice(_one(form, "draw"), DRAWS, "Draw on liquidity"),
         _clip(_one(form, "news_to_watch"), "News to watch", 4000),
         _clip(_one(form, "eod_review"), "End-of-day review", 4000),
+        _clip(_one(form, "plan_followed"), "Plan review", 4000) if "plan_followed" in form else None,
+        _clip(_one(form, "tomorrow_change"), "Tomorrow’s changes", 4000) if "tomorrow_change" in form else None,
     )
     return day
 
@@ -1629,7 +1642,7 @@ def export_backup(conn, user: dict) -> dict:
         "trades": trade_rows,
         "days": db.many(
             conn,
-            "SELECT day, bias, key_levels, draw, news_to_watch, eod_review FROM days WHERE user_id = ? ORDER BY day",
+            "SELECT day, bias, key_levels, draw, news_to_watch, eod_review, plan_followed, tomorrow_change FROM days WHERE user_id = ? ORDER BY day",
             (user_id,),
         ),
         "playbooks": books,
@@ -1806,6 +1819,8 @@ def restore_backup(conn, user: dict, payload: dict) -> int:
                 day.get("draw") if day.get("draw") in DRAWS else "",
                 str(day.get("news_to_watch") or "")[:4000],
                 str(day.get("eod_review") or "")[:4000],
+                str(day.get("plan_followed") or "")[:4000],
+                str(day.get("tomorrow_change") or "")[:4000],
             )
         for book in payload.get("playbooks") or []:
             book_id = db.insert_playbook(
@@ -1910,17 +1925,37 @@ def disable_checklist_item(conn, user: dict, item_id: int) -> None:
     db.disable_check(conn, user["id"], item_id)
 
 
-def save_playbook(conn, user: dict, form, playbook_id: int | None = None) -> int:
-    name = _clip(_one(form, "name"), "Name", 120)
-    if not name:
-        raise JournalError("Name the setup.")
-    setup = _clip(_one(form, "setup"), "Setup", 8000)
-    rules = _clip(_one(form, "rules"), "Rules", 8000)
-    notes = _clip(_one(form, "example_notes"), "Notes", 8000)
+PLAYBOOK_FIELDS = {
+    "name": ("Setup name", 120),
+    "setup": ("Setup description", 8000),
+    "rules": ("Rules", 8000),
+    "example_notes": ("Notes", 8000),
+}
+
+
+class PlaybookValidationError(JournalError):
+    def __init__(self, fields: dict[str, str]):
+        super().__init__("Review the highlighted fields and try again.")
+        self.fields = fields
+
+
+def save_playbook(conn, user: dict, form, playbook_id: int | None = None) -> int | None:
+    values = {}
+    errors = {}
+    for key, (label, limit) in PLAYBOOK_FIELDS.items():
+        try:
+            values[key] = _clip(_one(form, key), label, limit)
+        except JournalError as exc:
+            errors[key] = str(exc)
+    if values.get("name") == "":
+        errors["name"] = "Enter a setup name."
+    if errors:
+        raise PlaybookValidationError(errors)
+    name, setup, rules, notes = (values[key] for key in PLAYBOOK_FIELDS)
     if playbook_id is None:
         return db.insert_playbook(conn, user["id"], name, setup, rules, notes, utc_iso(datetime.now(UTC)))
     if not db.update_playbook(conn, user["id"], playbook_id, name, setup, rules, notes):
-        raise JournalError("Setup not found.")
+        return None
     return playbook_id
 
 

@@ -1,37 +1,73 @@
 {% extends "base.html" %}
-{% block title %}Plan · Omensite Journal{% endblock %}
+{% block title %}{{ day }} · Plan · Omensite Journal{% endblock %}
+{% block body_class %}plan-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/plan.css?v=1">{% endblock %}
 {% block body %}
-<h1>Day plan</h1>
-<form class="filters" method="get" action="/plan">
-  <label>Date<input type="date" name="day" value="{{ day }}"></label>
-  <button type="submit">Open</button>
-</form>
-<form class="panel" method="post" action="/plan">
+<header class="journal-page-heading">
+  <h1>Day plan</h1>
+  <p class="muted">Set your intention before the session. Review your decisions when it ends.</p>
+</header>
+<section class="plan-date-bar" aria-label="Plan date">
+  <form method="get" action="/plan" data-plan-date>
+    <label for="plan-date">Selected date <input id="plan-date" type="date" name="day" value="{{ day }}" required></label>
+    <noscript><button type="submit">Open date</button></noscript>
+  </form>
+  <nav class="plan-date-links" aria-label="Change plan date">
+    {% if previous_day %}<a class="button ghost" href="/plan?day={{ previous_day }}">← Previous</a>{% endif %}
+    <a class="button ghost" href="/plan" {% if day == today %}aria-current="date"{% endif %}>Today</a>
+    {% if next_day %}<a class="button ghost" href="/plan?day={{ next_day }}">Next →</a>{% endif %}
+  </nav>
+  <p class="muted plan-zone">{{ zone_name }}</p>
+</section>
+<form method="post" action="/plan" id="day-plan" data-save-error="{{ 'true' if save_error else 'false' }}">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <input type="hidden" name="day" value="{{ day }}">
-  <label>Bias
-    <select name="bias">
-      <option value="">Unset</option>
-      {% for name in bias_choices %}<option value="{{ name }}" {% if plan.bias == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>Key levels<textarea name="key_levels">{{ plan.key_levels or "" }}</textarea></label>
-  <label>Draw on liquidity
-    <select name="draw">
-      <option value="">Unset</option>
-      {% for name in draw_choices %}<option value="{{ name }}" {% if plan.draw == name %}selected{% endif %}>{{ name }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>News to watch<textarea name="news_to_watch">{{ plan.news_to_watch or "" }}</textarea></label>
-  <label>End-of-day review<textarea name="eod_review">{{ plan.eod_review or "" }}</textarea></label>
-  <button type="submit">Save {{ day }}</button>
+  <section class="panel plan-prep" aria-labelledby="before-trading">
+    <header class="plan-section-heading">
+      <div><p class="kicker">Prepare</p><h2 id="before-trading">Before Trading</h2></div>
+      <div class="plan-copy">
+        <button type="button" class="ghost" data-copy-plan hidden {% if not previous_plan %}disabled{% endif %}>Copy previous plan</button>
+        <small>{% if previous_plan %}Prep from <time>{{ previous_plan.day }}</time>{% else %}No earlier prep saved.{% endif %}</small>
+      </div>
+    </header>
+    <div class="plan-prep-fields">
+      <label>Bias<select name="bias"><option value="">Unset</option>{% for name in bias_choices %}<option value="{{ name }}" {% if plan.bias == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+      <label>Liquidity target<select name="draw"><option value="">Unset</option>{% for name in draw_choices %}<option value="{{ name }}" {% if plan.draw == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+      <label>Key levels<textarea name="key_levels" rows="4" maxlength="4000" placeholder="Levels to watch and where your bias is invalidated.">{{ plan.key_levels }}</textarea></label>
+      <div class="plan-news"><div class="plan-field-heading"><label for="plan-news">News to watch</label><a href="/news" target="_blank" rel="noopener">News calendar ↗</a></div><textarea id="plan-news" name="news_to_watch" rows="4" maxlength="4000" placeholder="Releases, times, and when you will stand aside.">{{ plan.news_to_watch }}</textarea></div>
+    </div>
+    <p data-copy-status class="muted" role="status" hidden></p>
+    <noscript><p class="muted">Enable JavaScript to copy prep and receive unsaved-change warnings.</p></noscript>
+  </section>
+  <header class="plan-section-heading plan-after-heading"><div><p class="kicker">Reflect</p><h2 id="after-trading">After Trading</h2></div><p class="muted">{{ day_label }}</p></header>
+  <section class="plan-after" aria-labelledby="after-trading">
+    <aside class="panel plan-trades" aria-labelledby="plan-trades-title">
+      <header class="plan-field-heading"><h3 id="plan-trades-title">This day’s trades</h3><span class="pill-tag">{{ opened | length }}</span></header>
+      <p class="muted">Opened on {{ day }} · {{ zone_name }}</p>
+      {% for trade in opened %}
+      <article class="plan-trade">
+        <div class="plan-field-heading"><strong>{{ trade.instrument }} <span class="muted">{{ trade.direction | title }}</span></strong><strong class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money if trade.is_closed else 'Open' }}</strong></div>
+        <p class="muted">{{ trade.account_name }} · {{ trade.when }}</p>
+        <a href="/trades/{{ trade.id }}" aria-label="View {{ trade.instrument }} trade opened {{ trade.when }}">View trade →</a>
+      </article>
+      {% else %}<div class="plan-no-trades"><h3>A day without trades counts, too.</h3><p class="muted">No trades opened on this date. You can still record your prep and review.</p></div>{% endfor %}
+    </aside>
+    <div class="panel plan-review">
+      <label>Did I follow my plan?<textarea name="plan_followed" rows="3" maxlength="4000" placeholder="Where did your execution match or depart from your prep?">{{ plan.plan_followed }}</textarea></label>
+      <label>What will I change tomorrow?<textarea name="tomorrow_change" rows="3" maxlength="4000" placeholder="Choose one specific adjustment for your next session.">{{ plan.tomorrow_change }}</textarea></label>
+      <label>End-of-day review<textarea name="eod_review" rows="4" maxlength="4000" placeholder="Keep your session notes and observations here.">{{ plan.eod_review }}</textarea></label>
+    </div>
+  </section>
+  <div class="plan-save-bar">
+    <div><strong><time datetime="{{ day }}">{{ day_label }}</time></strong><p role="status" aria-live="polite" data-plan-status {% if save_error %}class="negative"{% endif %}>{% if demo_mode %}Read-only demo{% elif save_error %}{{ save_error }}{% elif plan_saved %}Saved{% else %}Not saved yet{% endif %}</p></div>
+    <button type="submit" data-save-plan>Save plan</button>
+  </div>
 </form>
-<section class="panel">
-  <h2>Trades opened this day</h2>
-  {% for trade in opened %}
-  <p><a href="/trades/{{ trade.id }}">{{ trade.instrument }} {{ trade.direction }}</a> <span class="{{ trade.net_pnl | pnl_class }}">{{ trade.net_pnl | money }}</span> · <span class="{{ trade.r_multiple | pnl_class }}">{{ trade.r_multiple | rmult }}</span></p>
-  {% else %}
-  <p class="muted">No trade opened on this date in your timezone.</p>
-  {% endfor %}
-</section>
+<dialog id="plan-confirm" class="plan-confirm" aria-labelledby="plan-confirm-title" aria-describedby="plan-confirm-message">
+  <h2 id="plan-confirm-title"></h2>
+  <p id="plan-confirm-message"></p>
+  <form method="dialog"><button class="ghost" value="cancel" autofocus>Keep editing</button><button value="confirm" data-confirm-action></button></form>
+</dialog>
+<script type="application/json" id="previous-plan-data">{{ previous_plan | tojson }}</script>
 {% endblock %}
+{% block scripts %}<script src="/static/js/plan.js?v=1"></script>{% endblock %}

@@ -8,6 +8,24 @@ from app import db
 
 
 class StorageTests(unittest.TestCase):
+    def test_plan_migration_preserves_existing_notes_and_is_repeatable(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.executescript(db.SCHEMA)
+            user_id = db.create_user(conn, "old-plan@example.test", "fixture", "fixture", "America/New_York")
+            conn.execute("INSERT INTO days (user_id, day, bias, key_levels, eod_review) VALUES (?, ?, ?, ?, ?)",
+                         (user_id, "2026-11-16", "Bullish", "Original levels", "Original review"))
+            db.init_db(conn)
+            db.init_db(conn)
+            row = db.day_row(conn, user_id, "2026-11-16")
+            self.assertEqual(row["key_levels"], "Original levels")
+            self.assertEqual(row["eod_review"], "Original review")
+            self.assertIsNone(row["plan_followed"])
+            self.assertIsNone(row["tomorrow_change"])
+        finally:
+            conn.close()
+
     def test_production_requires_a_managed_database(self):
         with patch.dict(os.environ, {"DATABASE_URL": "", "OMENSITE_REQUIRE_DATABASE": "1"}):
             with self.assertRaisesRegex(RuntimeError, "Attach a managed PostgreSQL"):

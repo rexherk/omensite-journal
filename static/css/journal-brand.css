@@ -1,4 +1,6 @@
 /* Cream framing and warm white data surfaces, shared with the public preview. */
+.dashboard-plan-shortcut { display:none; }
+@media(max-width:900px) { .page-head .actions .dashboard-plan-shortcut { display:block; width:100%; text-align:center; font-size:14px; min-height:44px; } }
 :root,:root[data-theme=light],:root[data-theme=dark]{
   color-scheme:light;--header-height:70px;
   --bg:var(--oj-paper);--bg-subtle:var(--oj-surface);--surface:var(--oj-surface);--surface-hover:var(--oj-secondary-soft);

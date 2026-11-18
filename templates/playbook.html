@@ -1,28 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Playbook · Omensite Journal{% endblock %}
+{% block body_class %}playbook-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/playbook.css?v=1">{% endblock %}
 {% block body %}
-<h1>Playbook</h1>
-<p class="muted">Your own setups, with the rules and the charts you want to see again.</p>
+<header class="playbook-heading">
+  <div>
+    <h1>Playbook</h1>
+    <p>Know your X’s and O’s. Trade your game plan.</p>
+  </div>
+  {% if not demo_mode and total %}<a class="button" href="/playbook/new">Add setup</a>{% endif %}
+</header>
+{% if total %}
+<form class="playbook-search" method="get" action="/playbook" role="search" aria-label="Search setups">
+  <div>
+    <label for="playbook-search">Find a setup</label>
+    <input type="search" id="playbook-search" name="q" maxlength="120" value="{{ query }}" placeholder="Search by name">
+  </div>
+  <button class="ghost" type="submit">Search</button>
+  {% if query %}<a href="/playbook" class="button ghost">Clear</a>{% endif %}
+</form>
+{% endif %}
 {% if books %}
-<section class="split">
+<section class="panel playbook-list" aria-label="Saved setups">
   {% for book in books %}
-  <article class="panel">
-    <h2><a href="/playbook/{{ book.id }}">{{ book.name }}</a></h2>
-    <p>{{ book.setup or "" }}</p>
-    {% if book.cover %}<img src="/playbook-media/{{ book.cover }}" alt="" style="max-width:100%; border-radius:8px">{% endif %}
+  <article class="playbook-row">
+    <div>
+      <h2><a href="/playbook/{{ book.id }}">{{ book.name }}</a></h2>
+      {% if book.summary %}<p>{{ book.summary }}</p>{% endif %}
+    </div>
+    <div class="playbook-row-meta">
+      {% if book.chart_count %}<span>{{ book.chart_count }} chart{{ '' if book.chart_count == 1 else 's' }}</span>{% endif %}
+      <a class="button ghost" href="/playbook/{{ book.id }}" aria-label="Open setup: {{ book.name }}">Open <span aria-hidden="true">→</span></a>
+    </div>
   </article>
   {% endfor %}
 </section>
+{% elif total %}
+<section class="panel playbook-empty">
+  <h2>No matching setups</h2>
+  <p>Try a different name or <a href="/playbook">view all setups</a>.</p>
+</section>
 {% else %}
-<section class="panel"><p>No setups in the playbook yet.</p></section>
+<section class="panel playbook-empty">
+  <h2>{% if demo_mode %}No sample setups yet{% else %}Add your first setup{% endif %}</h2>
+  <p>Write down the conditions you look for and the rules you want to follow.</p>
+  {% if demo_mode %}<a class="button" href="/signup">Create your journal</a>{% else %}<a class="button" href="/playbook/new">Add setup</a>{% endif %}
+</section>
 {% endif %}
-<form class="panel" method="post" action="/playbook">
-  <h2>New setup</h2>
-  <input type="hidden" name="csrf" value="{{ csrf }}">
-  <label>Name<input name="name" required></label>
-  <label>Setup<textarea name="setup"></textarea></label>
-  <label>Rules<textarea name="rules"></textarea></label>
-  <label>Notes<textarea name="example_notes"></textarea></label>
-  <button type="submit">Save setup</button>
-</form>
 {% endblock %}

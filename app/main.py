@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -71,6 +72,10 @@ from app.services import (
     open_demo,
     parse_trade_form,
     plan_context,
+    plan_date_context,
+    PLAN_FIELDS,
+    PLAYBOOK_FIELDS,
+    PlaybookValidationError,
     remove_account_for,
     remove_playbook,
     remove_playbook_shot,
@@ -815,10 +820,16 @@ def plan_page(request: Request):
             ctx = plan_context(conn, user, request.query_params.get("day", ""))
     except FormError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return render(request, "plan.html", **ctx)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse(ctx, headers={"Cache-Control": "private, no-store"})
+    return render(request, "plan.html", notice="", **ctx)
 
 
-@app.post("/plan")
+@app.post("/plan", openapi_extra={"requestBody": {"required": True, "content": {
+    "application/x-www-form-urlencoded": {"schema": {"type": "object", "required": ["csrf", "day"],
+        "properties": {"csrf": {"type": "string"}, "day": {"type": "string", "format": "date"},
+                       **{key: {"type": "string", "maxLength": 4000} for key in PLAN_FIELDS}}}}
+}}})
 async def plan_save(request: Request):
     user = current(request)
     form = await read_form(request)
@@ -826,8 +837,25 @@ async def plan_save(request: Request):
     try:
         with db.session() as conn:
             day = save_plan(conn, user, form)
-    except FormError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        invalid = isinstance(exc, FormError)
+        message = str(exc) if invalid else "Could not save your plan. Your edits are still here. Please try again."
+        if not invalid:
+            logging.getLogger(__name__).exception("Plan save failed")
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"saved": False, "error": message}, status_code=400 if invalid else 503,
+                                headers={"Cache-Control": "private, no-store"})
+        try:
+            with db.session() as conn:
+                ctx = plan_context(conn, user, str(form.get("day", "")))
+        except Exception:
+            # Keep the submitted text available even when storage is unavailable.
+            ctx = {**plan_date_context(user, ""), "previous_plan": None, "opened": [], "plan_saved": False}
+            ctx["day"] = str(form.get("day", ""))
+        ctx.update(plan={key: str(form.get(key, "")) for key in PLAN_FIELDS}, save_error=message)
+        return render(request, "plan.html", 400 if invalid else 503, notice="", **ctx)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"saved": True, "day": day}, headers={"Cache-Control": "private, no-store"})
     return RedirectResponse(f"/plan?day={day}&notice=plan", status_code=303)
 
 
@@ -843,53 +871,95 @@ def reviews_page(request: Request):
 
 
 @app.get("/playbook")
-def playbook_page(request: Request):
+def playbook_page(request: Request, q: str = ""):
     user = current(request)
     with db.session() as conn:
-        books = db.playbooks(conn, user["id"])
-        for book in books:
-            images = db.playbook_images(conn, book["id"])
-            book["cover"] = images[0]["id"] if images else None
-    return render(request, "playbook.html", books=books)
+        books = db.playbook_index(conn, user["id"])
+    query = q.strip()[:120]
+    matches = [book for book in books if query.casefold() in book["name"].casefold()]
+    for book in matches:
+        summary = " ".join((book.pop("setup") or "").split())
+        book["summary"] = summary if len(summary) <= 160 else summary[:157].rstrip() + "…"
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"setups": matches, "total": len(books)}, headers={"Cache-Control": "private, no-store"})
+    return render(request, "playbook.html", books=matches, total=len(books), query=query)
+
+
+@app.get("/playbook/new")
+def playbook_new(request: Request, copy: int | None = None):
+    user = current(request)
+    draft = {}
+    source = None
+    if copy is not None:
+        with db.session() as conn:
+            source = db.playbook(conn, user["id"], copy)
+        if source is None:
+            raise HTTPException(status_code=404, detail="Setup not found.")
+        draft = {key: source[key] for key in PLAYBOOK_FIELDS}
+        suffix = " (copy)"
+        draft["name"] = source["name"][:PLAYBOOK_FIELDS["name"][1] - len(suffix)].rstrip() + suffix
+    return render(request, "playbook_editor.html", draft=draft, source=source, field_errors={})
 
 
 @app.post("/playbook")
 async def playbook_create(request: Request):
-    user = current(request)
-    form = await read_form(request)
-    assert_csrf(request, form)
-    try:
-        with db.session() as conn:
-            book_id = save_playbook(conn, user, form)
-    except FormError as exc:
-        with db.session() as conn:
-            books = db.playbooks(conn, user["id"])
-        return render(request, "playbook.html", 400, books=books, error=str(exc))
-    return RedirectResponse(f"/playbook/{book_id}", status_code=303)
+    return await submit_playbook(request)
 
 
 @app.get("/playbook/{playbook_id}")
-def playbook_detail(request: Request, playbook_id: int):
+def playbook_detail(request: Request, playbook_id: int, edit: bool = False):
     user = current(request)
     with db.session() as conn:
         book = db.playbook(conn, user["id"], playbook_id)
         images = db.playbook_images(conn, playbook_id) if book else []
     if book is None:
         raise HTTPException(status_code=404, detail="Setup not found.")
-    return render(request, "playbook_detail.html", book=book, images=images)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({**{key: book[key] for key in ("id", *PLAYBOOK_FIELDS)},
+                             "charts": [{"id": image["id"], "url": f'/playbook-media/{image["id"]}'} for image in images]},
+                            headers={"Cache-Control": "private, no-store"})
+    if edit:
+        return render(request, "playbook_editor.html", draft=book, book_id=playbook_id, field_errors={}, notice="")
+    return render(request, "playbook_detail.html", book=book, images=images,
+                  saved=request.query_params.get("notice") == "setup-saved", notice="")
 
 
 @app.post("/playbook/{playbook_id}")
 async def playbook_update(request: Request, playbook_id: int):
+    return await submit_playbook(request, playbook_id)
+
+
+async def submit_playbook(request: Request, playbook_id: int | None = None):
     user = current(request)
     form = await read_form(request)
-    assert_csrf(request, form)
+    wants_json = "application/json" in request.headers.get("accept", "")
+    errors = {}
     try:
+        assert_csrf(request, form)
         with db.session() as conn:
-            save_playbook(conn, user, form, playbook_id)
-    except FormError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return RedirectResponse(f"/playbook/{playbook_id}", status_code=303)
+            book_id = save_playbook(conn, user, form, playbook_id)
+            if book_id is None:
+                raise HTTPException(status_code=404, detail="Setup not found.")
+    except PlaybookValidationError as exc:
+        status, message, errors = 400, str(exc), exc.fields
+    except HTTPException as exc:
+        status, message = exc.status_code, exc.detail
+    except Exception:
+        logging.getLogger(__name__).exception("Playbook save failed")
+        status, message = 503, "Could not save the setup. Your edits are still here. Try again."
+    else:
+        destination = f"/playbook/{book_id}?notice=setup-saved"
+        if wants_json:
+            return JSONResponse({"saved": True, "id": book_id, "url": destination},
+                                headers={"Cache-Control": "private, no-store"})
+        return RedirectResponse(destination, status_code=303)
+
+    if wants_json:
+        return JSONResponse({"saved": False, "error": message, "fields": errors}, status_code=status,
+                            headers={"Cache-Control": "private, no-store"})
+    fields = {key: str(form.get(key, "")) for key in PLAYBOOK_FIELDS}
+    return render(request, "playbook_editor.html", status, draft=fields, book_id=playbook_id,
+                  save_error=message, field_errors=errors, notice="")
 
 
 @app.post("/playbook/{playbook_id}/delete")
@@ -916,7 +986,12 @@ async def playbook_image_add(request: Request, playbook_id: int):
         with db.session() as conn:
             add_playbook_shot(conn, user, playbook_id, data)
     except FormError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        with db.session() as conn:
+            book = db.playbook(conn, user["id"], playbook_id)
+            if book is None:
+                raise HTTPException(status_code=404, detail="Setup not found.") from exc
+            images = db.playbook_images(conn, playbook_id)
+        return render(request, "playbook_detail.html", 400, book=book, images=images, chart_error=str(exc))
     return RedirectResponse(f"/playbook/{playbook_id}", status_code=303)
 
 

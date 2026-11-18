@@ -80,6 +80,16 @@ Topstep overlays require a confirmed plan under Settings → Accounts → Plan a
 
 Without `DATABASE_URL`, the local journal uses SQLite in the `data` folder next to this file. Set `OMENSITE_DATA` to put that folder somewhere else. New uploaded images are stored inside the selected database; existing local chart files remain supported. Each signed-in trader sees only their own records.
 
+## Daily planning
+
+`GET /plan?day=YYYY-MM-DD` opens a plan; omitting `day` resolves today in the signed-in journal's current timezone. The mobile Dashboard's Today’s Plan link uses this route. Before Trading holds prep; After Trading pairs the selected day's entries with review prompts and the existing end-of-day notes. Dates of trades are calculated from UTC fills in the current journal timezone.
+
+Copy previous plan uses the most recent earlier saved day with non-empty prep, skipping review-only days. Its source date is shown. Copying changes the four prep fields in the browser only, requires confirmation before replacing non-empty prep, and leaves review fields and trades intact until Save plan. Date/page navigation warns about unsaved edits. The save bar stays available, confirms only successful saves, and retains drafts on validation, session, network, or server failures. Without JavaScript, ordinary form submission and date navigation still work, but copying and draft warnings require JavaScript.
+
+The existing session-scoped routes support direct functional checks: send `Accept: application/json` to `GET /plan` for the date, plan, earlier prep, and selected trades. `POST /plan` accepts form fields `csrf`, `day`, `bias`, `key_levels`, `draw`, `news_to_watch`, `eod_review`, `plan_followed`, and `tomorrow_change`. With the same Accept header it returns `{ "saved": true, "day": "YYYY-MM-DD" }` only after commit, or `{ "saved": false, "error": "..." }` for validation/storage errors. CSRF/session checks remain required; the demo remains read-only. Readback responses are private and non-cacheable. The form schema is published in `/openapi.json`. Saves upsert the signed-in user's selected day; retrying cannot duplicate a plan.
+
+Migration `003_plan_review_postgres.sql` adds nullable review columns without rewriting existing notes. SQLite applies the equivalent additive upgrade on startup. JSON backups include both new prompts and accept older backups. Before deploying this schema change, back up the hosted database; no production migration is applied during local development.
+
 ## Tests
 
 ```

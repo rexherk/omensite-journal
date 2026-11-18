@@ -16,7 +16,7 @@
   </script>
   <link rel="stylesheet" href="/static/css/app.css?v=raspberry-1">
   <link rel="stylesheet" href="/static/css/brand.css?v=pnl-colors-1">
-  <link rel="stylesheet" href="/static/css/journal-brand.css?v=monthly-report-2">
+  <link rel="stylesheet" href="/static/css/journal-brand.css?v=plan-shortcut-1">
   <link rel="stylesheet" href="/static/css/overview.css?v=equity-unified-2">
   {% block extra_head %}{% endblock %}
 </head>
@@ -38,8 +38,8 @@
         <a href="/report" class="{% if path.startswith('/report') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Monthly Report</span></a>
       </div>
       <div class="group">
-        <span>Playbook</span>
-        <a href="/playbook" class="{% if path.startswith('/playbook') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zM6 4a2 2 0 0 0-2 2v14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Setups</span></a>
+        <span>Preparation</span>
+        <a href="/playbook" class="{% if path.startswith('/playbook') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zM6 4a2 2 0 0 0-2 2v14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Playbook</span></a>
         <a href="/plan" class="{% if path.startswith('/plan') %}on{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3v4M16 3v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Plan</span></a>
       </div>
       <div class="group">
